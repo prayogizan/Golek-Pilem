@@ -36,6 +36,8 @@
     <string name="cd_poster_placeholder">No poster artwork available</string>
     <string name="empty_feed_title">No Content Found</string>
     <string name="empty_feed_message">We couldn\'t find any movies or TV series at the moment. Please check back later.</string>
+    <string name="empty_feed_refresh_button">Refresh Feed</string>
+    <string name="cd_empty_illustration">Empty catalog illustration</string>
     <string name="pagination_error_message">Failed to load additional items</string>
     <string name="pagination_retry_button">Retry</string>
 </resources>

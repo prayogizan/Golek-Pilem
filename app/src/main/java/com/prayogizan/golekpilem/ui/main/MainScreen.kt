@@ -32,9 +32,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.paging.LoadState
+import androidx.paging.LoadStates
+import androidx.paging.PagingData
 import androidx.paging.compose.LazyPagingItems
+import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
 import com.prayogizan.golekpilem.R
+import kotlinx.coroutines.flow.flowOf
 import com.prayogizan.golekpilem.domain.model.Movie
 import com.prayogizan.golekpilem.domain.model.TvSeries
 import com.prayogizan.golekpilem.ui.common.ErrorScreen
@@ -189,7 +193,10 @@ private fun MovieFeedGrid(
             )
         }
         movies.itemCount == 0 && refreshState is LoadState.NotLoading -> {
-            EmptyFeedView(modifier = modifier.fillMaxSize())
+            EmptyFeedView(
+                onRefresh = { movies.refresh() },
+                modifier = modifier.fillMaxSize()
+            )
         }
         else -> {
             LazyVerticalStaggeredGrid(
@@ -283,7 +290,10 @@ private fun TvSeriesFeedGrid(
             )
         }
         tvSeries.itemCount == 0 && refreshState is LoadState.NotLoading -> {
-            EmptyFeedView(modifier = modifier.fillMaxSize())
+            EmptyFeedView(
+                onRefresh = { tvSeries.refresh() },
+                modifier = modifier.fillMaxSize()
+            )
         }
         else -> {
             LazyVerticalStaggeredGrid(
@@ -336,22 +346,214 @@ private fun TvSeriesFeedGrid(
     }
 }
 
-@Preview(name = "MainScreen - Light Mode", showBackground = true)
+// =============================================================================
+// Comprehensive Compose Previews
+// =============================================================================
+
+private val previewSampleMovies = listOf(
+    Movie(
+        id = 1,
+        title = "The Beekeeper",
+        posterUrl = "https://image.tmdb.org/t/p/w185/A7EByudX0eOzlkQ2FIbogzyazm2.jpg",
+        releaseYear = "2024",
+        voteAverage = 7.4
+    ),
+    Movie(
+        id = 2,
+        title = "Dune: Part Two",
+        posterUrl = "https://image.tmdb.org/t/p/w185/8b8R8l88Qje9dn9OE8PY05Nxl1X.jpg",
+        releaseYear = "2024",
+        voteAverage = 8.3
+    ),
+    Movie(
+        id = 3,
+        title = "Deadpool & Wolverine",
+        posterUrl = "https://image.tmdb.org/t/p/w185/8cdWjvZQUExUUTzyp4t6EDMubfO.jpg",
+        releaseYear = "2024",
+        voteAverage = 7.8
+    ),
+    Movie(
+        id = 4,
+        title = "Oppenheimer",
+        posterUrl = "https://image.tmdb.org/t/p/w185/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg",
+        releaseYear = "2023",
+        voteAverage = 8.1
+    ),
+    Movie(
+        id = 5,
+        title = "Inside Out 2",
+        posterUrl = "https://image.tmdb.org/t/p/w185/vpnVM9B6NMmQpWeZvzLvDESb2QY.jpg",
+        releaseYear = "2024",
+        voteAverage = 7.7
+    ),
+    Movie(
+        id = 6,
+        title = "Civil War",
+        posterUrl = "https://image.tmdb.org/t/p/w185/sh7Rg8Er3tFcN9BpKIPOMvALgZd.jpg",
+        releaseYear = "2024",
+        voteAverage = 7.0
+    )
+)
+
+private val previewSampleTvSeries = listOf(
+    TvSeries(
+        id = 101,
+        name = "Stranger Things",
+        posterUrl = "https://image.tmdb.org/t/p/w185/49WJfeN0moxb9IPfGn8AIqMGskD.jpg",
+        firstAirYear = "2016",
+        voteAverage = 8.6
+    ),
+    TvSeries(
+        id = 102,
+        name = "Breaking Bad",
+        posterUrl = "https://image.tmdb.org/t/p/w185/ztkUQFLlC19CCMYHW9o1zWhJRNq.jpg",
+        firstAirYear = "2008",
+        voteAverage = 8.9
+    ),
+    TvSeries(
+        id = 103,
+        name = "The Last of Us",
+        posterUrl = "https://image.tmdb.org/t/p/w185/uKvVjK1q12R4t0ToxsZwh8b5gD4.jpg",
+        firstAirYear = "2023",
+        voteAverage = 8.6
+    ),
+    TvSeries(
+        id = 104,
+        name = "Shogun",
+        posterUrl = "https://image.tmdb.org/t/p/w185/7O4iVfOMQmdCSxhOg1WNzG1AgYT.jpg",
+        firstAirYear = "2024",
+        voteAverage = 8.5
+    ),
+    TvSeries(
+        id = 105,
+        name = "Severance",
+        posterUrl = "https://image.tmdb.org/t/p/w185/b5yq2wA7fS0o94gD6b8X9Y8e0b6.jpg",
+        firstAirYear = "2022",
+        voteAverage = 8.4
+    ),
+    TvSeries(
+        id = 106,
+        name = "Fallout",
+        posterUrl = "https://image.tmdb.org/t/p/w185/AnsSKR9LuK0T9bAILezUVjl3ZYZ.jpg",
+        firstAirYear = "2024",
+        voteAverage = 8.4
+    )
+)
+
+@Preview(name = "MainScreen - Movies Feed Light", showBackground = true)
 @Composable
-private fun MainScreenLightPreview() {
+private fun MainScreenMoviesFeedLightPreview() {
     GolekPilemTheme(darkTheme = false) {
         Surface {
-            // Preview renders placeholder state cleanly
+            MainScreen(
+                uiState = MainUiState(selectedTabIndex = 0),
+                movies = flowOf(PagingData.from(previewSampleMovies)).collectAsLazyPagingItems(),
+                tvSeries = flowOf(PagingData.from(previewSampleTvSeries)).collectAsLazyPagingItems(),
+                onEvent = {},
+                onItemClick = { _, _ -> }
+            )
         }
     }
 }
 
-@Preview(name = "MainScreen - Dark Mode", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Preview(name = "MainScreen - Movies Feed Dark", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
-private fun MainScreenDarkPreview() {
+private fun MainScreenMoviesFeedDarkPreview() {
     GolekPilemTheme(darkTheme = true) {
         Surface {
-            // Preview renders placeholder state cleanly
+            MainScreen(
+                uiState = MainUiState(selectedTabIndex = 0),
+                movies = flowOf(PagingData.from(previewSampleMovies)).collectAsLazyPagingItems(),
+                tvSeries = flowOf(PagingData.from(previewSampleTvSeries)).collectAsLazyPagingItems(),
+                onEvent = {},
+                onItemClick = { _, _ -> }
+            )
         }
     }
 }
+
+@Preview(name = "MainScreen - Loading Shimmer State", showBackground = true)
+@Composable
+private fun MainScreenLoadingPreview() {
+    val loadingLoadStates = LoadStates(
+        refresh = LoadState.Loading,
+        prepend = LoadState.NotLoading(endOfPaginationReached = false),
+        append = LoadState.NotLoading(endOfPaginationReached = false)
+    )
+    GolekPilemTheme(darkTheme = false) {
+        Surface {
+            MainScreen(
+                uiState = MainUiState(selectedTabIndex = 0),
+                movies = flowOf(PagingData.empty<Movie>(sourceLoadStates = loadingLoadStates)).collectAsLazyPagingItems(),
+                tvSeries = flowOf(PagingData.empty<TvSeries>()).collectAsLazyPagingItems(),
+                onEvent = {},
+                onItemClick = { _, _ -> }
+            )
+        }
+    }
+}
+
+@Preview(name = "MainScreen - Error State", showBackground = true)
+@Composable
+private fun MainScreenErrorPreview() {
+    val errorLoadStates = LoadStates(
+        refresh = LoadState.Error(Exception("Unable to load popular movies. Please check your network connection.")),
+        prepend = LoadState.NotLoading(endOfPaginationReached = false),
+        append = LoadState.NotLoading(endOfPaginationReached = false)
+    )
+    GolekPilemTheme(darkTheme = false) {
+        Surface {
+            MainScreen(
+                uiState = MainUiState(selectedTabIndex = 0),
+                movies = flowOf(PagingData.empty<Movie>(sourceLoadStates = errorLoadStates)).collectAsLazyPagingItems(),
+                tvSeries = flowOf(PagingData.empty<TvSeries>()).collectAsLazyPagingItems(),
+                onEvent = {},
+                onItemClick = { _, _ -> }
+            )
+        }
+    }
+}
+
+@Preview(name = "MainScreen - Empty Feed Light", showBackground = true)
+@Composable
+private fun MainScreenEmptyFeedLightPreview() {
+    val emptyStates = LoadStates(
+        refresh = LoadState.NotLoading(endOfPaginationReached = true),
+        prepend = LoadState.NotLoading(endOfPaginationReached = true),
+        append = LoadState.NotLoading(endOfPaginationReached = true)
+    )
+    GolekPilemTheme(darkTheme = false) {
+        Surface {
+            MainScreen(
+                uiState = MainUiState(selectedTabIndex = 0),
+                movies = flowOf(PagingData.empty<Movie>(sourceLoadStates = emptyStates)).collectAsLazyPagingItems(),
+                tvSeries = flowOf(PagingData.empty<TvSeries>(sourceLoadStates = emptyStates)).collectAsLazyPagingItems(),
+                onEvent = {},
+                onItemClick = { _, _ -> }
+            )
+        }
+    }
+}
+
+@Preview(name = "MainScreen - Empty Feed Dark", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun MainScreenEmptyFeedDarkPreview() {
+    val emptyStates = LoadStates(
+        refresh = LoadState.NotLoading(endOfPaginationReached = true),
+        prepend = LoadState.NotLoading(endOfPaginationReached = true),
+        append = LoadState.NotLoading(endOfPaginationReached = true)
+    )
+    GolekPilemTheme(darkTheme = true) {
+        Surface {
+            MainScreen(
+                uiState = MainUiState(selectedTabIndex = 0),
+                movies = flowOf(PagingData.empty<Movie>(sourceLoadStates = emptyStates)).collectAsLazyPagingItems(),
+                tvSeries = flowOf(PagingData.empty<TvSeries>(sourceLoadStates = emptyStates)).collectAsLazyPagingItems(),
+                onEvent = {},
+                onItemClick = { _, _ -> }
+            )
+        }
+    }
+}
+
+
