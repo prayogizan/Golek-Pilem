@@ -1,3 +1,29 @@
 <resources>
     <string name="app_name">Golek Pilem</string>
+
+    <!-- Rating Indicator -->
+    <string name="cd_rating_indicator">Rating: %1$.1f out of 10</string>
+    <string name="rating_percentage_format">%1$d%%</string>
+    <string name="rating_score_format">%1$.1f</string>
+
+    <!-- Loading Screen -->
+    <string name="cd_loading_indicator">Loading indicator</string>
+    <string name="loading_default_message">Discovering movies &amp; series…</string>
+
+    <!-- Error Screen -->
+    <string name="cd_error_icon">Error indicator</string>
+    <string name="error_default_title">Something went wrong</string>
+    <string name="error_default_message">Unable to load content. Please check your connection and try again.</string>
+    <string name="error_retry_button">Try Again</string>
+
+    <!-- Genre Chips -->
+    <string name="cd_genre_chip">Genre %1$s</string>
+
+    <!-- Navigation & Placeholders -->
+    <string name="nav_main_title">Golek Pilem</string>
+    <string name="nav_main_placeholder">Main feed will be available in Phase 3 feed implementation.</string>
+    <string name="nav_detail_placeholder_title">Detail View</string>
+    <string name="nav_detail_placeholder_description">Viewing %1$s (ID: %2$d)</string>
+    <string name="nav_back_button">Back</string>
+    <string name="cd_back_button">Navigate back</string>
 </resources>
