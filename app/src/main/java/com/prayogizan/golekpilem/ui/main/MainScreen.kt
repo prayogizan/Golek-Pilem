@@ -12,7 +12,6 @@ import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
-import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -23,8 +22,12 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -48,6 +51,7 @@ import com.prayogizan.golekpilem.ui.main.components.MediaGridCardPlaceholder
 import com.prayogizan.golekpilem.ui.main.components.PaginationErrorItem
 import com.prayogizan.golekpilem.ui.main.components.PaginationLoadingItem
 import com.prayogizan.golekpilem.ui.theme.GolekPilemTheme
+import kotlin.math.roundToInt
 
 /**
  * Stateless main discovery screen rendering a dual-tab feed ("Movies" and "TV Series").
@@ -55,6 +59,9 @@ import com.prayogizan.golekpilem.ui.theme.GolekPilemTheme
  * Employs an immersive, responsive 2-column [LazyVerticalStaggeredGrid] for mobile viewports,
  * preserves independent scroll state across tab switches, and renders skeleton shimmer loading
  * placeholders, error recovery screens, and full-width pagination indicators.
+ *
+ * Synchronously collapses both the top app bar and the primary tab row on downward scroll,
+ * and immediately reveals them on upward scroll using an enter-always scroll pattern.
  *
  * @param uiState Current immutable UI state representing the selected tab.
  * @param movies Paginated collection of popular movies.
@@ -77,76 +84,99 @@ fun MainScreen(
     val moviesGridState = rememberSaveable(saver = LazyStaggeredGridState.Saver) { LazyStaggeredGridState() }
     val tvSeriesGridState = rememberSaveable(saver = LazyStaggeredGridState.Saver) { LazyStaggeredGridState() }
 
+    // Scroll behavior that collapses header on scroll down and reveals it immediately on scroll up
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+
+    // Ensure header is fully revealed when switching tabs
+    LaunchedEffect(uiState.selectedTabIndex) {
+        scrollBehavior.state.heightOffset = 0f
+    }
+
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(
-                title = {
-                    Text(
-                        text = stringResource(R.string.nav_main_title),
-                        fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.titleLarge
+            Surface(
+                color = MaterialTheme.colorScheme.surface,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clipToBounds()
+                    .layout { measurable, constraints ->
+                        val placeable = measurable.measure(constraints)
+                        val heightOffset = scrollBehavior.state.heightOffset.roundToInt()
+                        scrollBehavior.state.heightOffsetLimit = -placeable.height.toFloat()
+                        val layoutHeight = (placeable.height + heightOffset).coerceAtLeast(0)
+                        layout(placeable.width, layoutHeight) {
+                            placeable.placeWithLayer(0, heightOffset)
+                        }
+                    }
+            ) {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    CenterAlignedTopAppBar(
+                        title = {
+                            Text(
+                                text = stringResource(R.string.nav_main_title),
+                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.titleLarge
+                            )
+                        },
+                        colors = TopAppBarDefaults.topAppBarColors(
+                            containerColor = MaterialTheme.colorScheme.surface
+                        )
                     )
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                )
-            )
+
+                    // Dual Tab Row (Movies & TV Series)
+                    PrimaryTabRow(
+                        selectedTabIndex = uiState.selectedTabIndex,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        val moviesCd = stringResource(R.string.cd_movie_tab)
+                        val tvCd = stringResource(R.string.cd_tv_tab)
+
+                        Tab(
+                            selected = uiState.selectedTabIndex == 0,
+                            onClick = { onEvent(MainUiEvent.SelectTab(0)) },
+                            text = {
+                                Text(
+                                    text = stringResource(R.string.tab_movies),
+                                    fontWeight = if (uiState.selectedTabIndex == 0) FontWeight.Bold else FontWeight.Medium
+                                )
+                            },
+                            modifier = Modifier.semantics { contentDescription = moviesCd }
+                        )
+
+                        Tab(
+                            selected = uiState.selectedTabIndex == 1,
+                            onClick = { onEvent(MainUiEvent.SelectTab(1)) },
+                            text = {
+                                Text(
+                                    text = stringResource(R.string.tab_tv_series),
+                                    fontWeight = if (uiState.selectedTabIndex == 1) FontWeight.Bold else FontWeight.Medium
+                                )
+                            },
+                            modifier = Modifier.semantics { contentDescription = tvCd }
+                        )
+                    }
+                }
+            }
         },
-        modifier = modifier
+        modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
     ) { innerPadding ->
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            // Dual Tab Row (Movies & TV Series)
-            PrimaryTabRow(
-                selectedTabIndex = uiState.selectedTabIndex,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                val moviesCd = stringResource(R.string.cd_movie_tab)
-                val tvCd = stringResource(R.string.cd_tv_tab)
-
-                Tab(
-                    selected = uiState.selectedTabIndex == 0,
-                    onClick = { onEvent(MainUiEvent.SelectTab(0)) },
-                    text = {
-                        Text(
-                            text = stringResource(R.string.tab_movies),
-                            fontWeight = if (uiState.selectedTabIndex == 0) FontWeight.Bold else FontWeight.Medium
-                        )
-                    },
-                    modifier = Modifier.semantics { contentDescription = moviesCd }
+            if (uiState.selectedTabIndex == 0) {
+                MovieFeedGrid(
+                    movies = movies,
+                    gridState = moviesGridState,
+                    onItemClick = onItemClick
                 )
-
-                Tab(
-                    selected = uiState.selectedTabIndex == 1,
-                    onClick = { onEvent(MainUiEvent.SelectTab(1)) },
-                    text = {
-                        Text(
-                            text = stringResource(R.string.tab_tv_series),
-                            fontWeight = if (uiState.selectedTabIndex == 1) FontWeight.Bold else FontWeight.Medium
-                        )
-                    },
-                    modifier = Modifier.semantics { contentDescription = tvCd }
+            } else {
+                TvSeriesFeedGrid(
+                    tvSeries = tvSeries,
+                    gridState = tvSeriesGridState,
+                    onItemClick = onItemClick
                 )
-            }
-
-            // Tab Content with Independent Scroll States
-            Box(modifier = Modifier.fillMaxSize()) {
-                if (uiState.selectedTabIndex == 0) {
-                    MovieFeedGrid(
-                        movies = movies,
-                        gridState = moviesGridState,
-                        onItemClick = onItemClick
-                    )
-                } else {
-                    TvSeriesFeedGrid(
-                        tvSeries = tvSeries,
-                        gridState = tvSeriesGridState,
-                        onItemClick = onItemClick
-                    )
-                }
             }
         }
     }
