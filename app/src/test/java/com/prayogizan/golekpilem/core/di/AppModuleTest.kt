@@ -7,6 +7,7 @@ import com.prayogizan.golekpilem.domain.usecase.GetMovieDetailUseCase
 import com.prayogizan.golekpilem.domain.usecase.GetMoviesUseCase
 import com.prayogizan.golekpilem.domain.usecase.GetTvSeriesDetailUseCase
 import com.prayogizan.golekpilem.domain.usecase.GetTvSeriesUseCase
+import com.prayogizan.golekpilem.ui.main.MainViewModel
 import org.junit.After
 import org.junit.Assert.assertNotNull
 import org.junit.Before
@@ -56,5 +57,8 @@ class AppModuleTest : KoinTest {
 
         val getTvSeriesDetailUseCase: GetTvSeriesDetailUseCase = get()
         assertNotNull("GetTvSeriesDetailUseCase should be resolved via domainModule", getTvSeriesDetailUseCase)
+
+        val mainViewModel: MainViewModel = get()
+        assertNotNull("MainViewModel should be resolved via presentationModule", mainViewModel)
     }
 }

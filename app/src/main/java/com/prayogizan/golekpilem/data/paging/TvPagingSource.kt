@@ -6,11 +6,13 @@ import com.prayogizan.golekpilem.data.mapper.toDomain
 import com.prayogizan.golekpilem.data.remote.api.TmdbApiService
 import com.prayogizan.golekpilem.domain.model.TvSeries
 import kotlinx.coroutines.CancellationException
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Paging 3 source responsible for incremental page retrieval of popular television series from the TMDB API.
  *
  * Implements 1-based pagination indexing conforming to TMDB API requirements, defensive mapping,
+ * deduplication of items across pages to ensure unique keys in Jetpack Compose,
  * and coroutine cancellation propagation to avoid silent coroutine leaks.
  *
  * @property apiService The Retrofit service abstraction used for remote data discovery.
@@ -26,12 +28,16 @@ class TvPagingSource(
         const val TMDB_STARTING_PAGE_INDEX = 1
     }
 
+    private val seenIds = ConcurrentHashMap.newKeySet<Int>()
+
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, TvSeries> {
         val position = params.key ?: TMDB_STARTING_PAGE_INDEX
         return try {
             val response = apiService.getTvSeries(page = position)
-            val tvSeries = response.results.map { it.toDomain() }
-            val nextKey = if (position >= response.totalPages || tvSeries.isEmpty()) {
+            val tvSeries = response.results
+                .filter { seenIds.add(it.id) }
+                .map { it.toDomain() }
+            val nextKey = if (position >= response.totalPages || response.results.isEmpty()) {
                 null
             } else {
                 position + 1

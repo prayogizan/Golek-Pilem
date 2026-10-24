@@ -28,6 +28,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
 import com.prayogizan.golekpilem.R
+import com.prayogizan.golekpilem.ui.main.MainRoute
 
 /**
  * Top-level navigation graph configuring destinations and transitions for Golek Pilem.
@@ -37,7 +38,7 @@ import com.prayogizan.golekpilem.R
  *
  * @param navController The navigation controller orchestrating back stack and destination transitions.
  * @param modifier Optional modifier applied to the root [NavHost].
- * @param mainContent Optional custom composable slot for [Screen.Main] (defaults to placeholder feed).
+ * @param mainContent Optional custom composable slot for [Screen.Main] (defaults to [MainRoute]).
  * @param detailContent Optional custom composable slot for [Screen.Detail] (defaults to placeholder detail view).
  */
 @Composable
@@ -58,8 +59,8 @@ fun GolekPilemNavGraph(
                     navController.navigate(Screen.Detail(id = id, mediaType = mediaType))
                 }
             } else {
-                MainPlaceholderScreen(
-                    onNavigateToDetail = { id, mediaType ->
+                MainRoute(
+                    onItemClick = { id, mediaType ->
                         navController.navigate(Screen.Detail(id = id, mediaType = mediaType))
                     }
                 )

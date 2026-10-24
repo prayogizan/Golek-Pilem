@@ -26,4 +26,16 @@
     <string name="nav_detail_placeholder_description">Viewing %1$s (ID: %2$d)</string>
     <string name="nav_back_button">Back</string>
     <string name="cd_back_button">Navigate back</string>
+
+    <!-- Main Screen & Feed (Phase 3) -->
+    <string name="tab_movies">Movies</string>
+    <string name="tab_tv_series">TV Series</string>
+    <string name="cd_movie_tab">Movies tab</string>
+    <string name="cd_tv_tab">TV Series tab</string>
+    <string name="cd_poster_format">Poster artwork for %1$s</string>
+    <string name="cd_poster_placeholder">No poster artwork available</string>
+    <string name="empty_feed_title">No Content Found</string>
+    <string name="empty_feed_message">We couldn\'t find any movies or TV series at the moment. Please check back later.</string>
+    <string name="pagination_error_message">Failed to load additional items</string>
+    <string name="pagination_retry_button">Retry</string>
 </resources>

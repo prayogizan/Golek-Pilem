@@ -203,4 +203,81 @@ class TvPagingSourceTest {
         val refreshKey = pagingSource.getRefreshKey(state)
         assertEquals(3, refreshKey)
     }
+
+    @Test
+    fun `load filters duplicate tv series items within the same page`() = runBlocking {
+        val fakeApi = FakeTvApiService(
+            getTvSeriesHandler = { page ->
+                PaginatedResponseDto(
+                    page = page,
+                    results = listOf(
+                        TvSeriesItemDto(id = 505, name = "Breaking Bad"),
+                        TvSeriesItemDto(id = 505, name = "Breaking Bad (Duplicate)"),
+                        TvSeriesItemDto(id = 606, name = "Better Call Saul")
+                    ),
+                    totalPages = 4,
+                    totalResults = 50
+                )
+            }
+        )
+        val pagingSource = TvPagingSource(fakeApi)
+
+        val params = PagingSource.LoadParams.Refresh<Int>(
+            key = null,
+            loadSize = 20,
+            placeholdersEnabled = false
+        )
+
+        val result = pagingSource.load(params)
+        val page = result as PagingSource.LoadResult.Page
+
+        assertEquals("Duplicates within the same page must be filtered", 2, page.data.size)
+        assertEquals(505, page.data[0].id)
+        assertEquals(606, page.data[1].id)
+    }
+
+    @Test
+    fun `load filters duplicate tv series items across consecutive pages`() = runBlocking {
+        val fakeApi = FakeTvApiService(
+            getTvSeriesHandler = { page ->
+                when (page) {
+                    1 -> PaginatedResponseDto(
+                        page = 1,
+                        results = listOf(
+                            TvSeriesItemDto(id = 505, name = "Breaking Bad"),
+                            TvSeriesItemDto(id = 606, name = "Better Call Saul")
+                        ),
+                        totalPages = 4,
+                        totalResults = 50
+                    )
+                    2 -> PaginatedResponseDto(
+                        page = 2,
+                        results = listOf(
+                            TvSeriesItemDto(id = 505, name = "Breaking Bad"), // Duplicate across pages
+                            TvSeriesItemDto(id = 707, name = "Severance")
+                        ),
+                        totalPages = 4,
+                        totalResults = 50
+                    )
+                    else -> error("Unexpected page: $page")
+                }
+            }
+        )
+        val pagingSource = TvPagingSource(fakeApi)
+
+        // Page 1
+        val page1Result = pagingSource.load(
+            PagingSource.LoadParams.Refresh(key = 1, loadSize = 20, placeholdersEnabled = false)
+        ) as PagingSource.LoadResult.Page
+        assertEquals(2, page1Result.data.size)
+        assertEquals(listOf(505, 606), page1Result.data.map { it.id })
+
+        // Page 2
+        val page2Result = pagingSource.load(
+            PagingSource.LoadParams.Append(key = 2, loadSize = 20, placeholdersEnabled = false)
+        ) as PagingSource.LoadResult.Page
+        assertEquals("Duplicate item from page 1 must be filtered out in page 2", 1, page2Result.data.size)
+        assertEquals(707, page2Result.data.first().id)
+        assertEquals(3, page2Result.nextKey)
+    }
 }
