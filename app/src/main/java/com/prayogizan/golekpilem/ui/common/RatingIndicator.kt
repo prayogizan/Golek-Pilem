@@ -3,16 +3,11 @@ package com.prayogizan.golekpilem.ui.common
 import android.content.res.Configuration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -61,15 +56,15 @@ fun getRatingColor(score: Double): Color = when {
  * @param score Raw TMDB rating score scaled from 0.0 to 10.0.
  * @param modifier Optional modifier applied to the outer badge container.
  * @param size Outer dimension for width and height of the circular badge.
- * @param strokeWidth Thickness of the circular progress arc.
- * @param showPercentage When true, displays integer percentage (`(score * 10)%`); otherwise displays score with star.
+ * @param strokeWidth Thickness of the circular progress arc. When unspecified, automatically scales with [size].
+ * @param showPercentage When true, displays integer percentage (`(score * 10)%`); otherwise displays score with single decimal place (e.g. `"8.5"`).
  */
 @Composable
 fun RatingIndicator(
     score: Double,
     modifier: Modifier = Modifier,
     size: Dp = 48.dp,
-    strokeWidth: Dp = 3.5.dp,
+    strokeWidth: Dp = Dp.Unspecified,
     showPercentage: Boolean = true
 ) {
     val boundedScore = score.coerceIn(0.0, 10.0)
@@ -77,6 +72,23 @@ fun RatingIndicator(
     val ratingColor = getRatingColor(boundedScore)
     val percentageValue = (boundedScore * 10).toInt()
     val cdText = stringResource(R.string.cd_rating_indicator, boundedScore)
+
+    val effectiveStrokeWidth = if (strokeWidth != Dp.Unspecified && strokeWidth > 0.dp) {
+        strokeWidth
+    } else {
+        when {
+            size <= 28.dp -> 2.dp
+            size <= 36.dp -> 2.5.dp
+            else -> 3.5.dp
+        }
+    }
+
+    val fontSize = when {
+        size <= 28.dp -> 9.sp
+        size <= 34.dp -> 10.5.sp
+        size <= 42.dp -> 11.5.sp
+        else -> 13.sp
+    }
 
     Box(
         modifier = modifier
@@ -90,10 +102,10 @@ fun RatingIndicator(
         CircularProgressIndicator(
             progress = { 1f },
             modifier = Modifier
-                .size(size - 4.dp)
-                .padding(2.dp),
+                .fillMaxSize()
+                .padding(effectiveStrokeWidth / 2 + 1.dp),
             color = ratingColor.copy(alpha = 0.25f),
-            strokeWidth = strokeWidth,
+            strokeWidth = effectiveStrokeWidth,
             trackColor = Color.Transparent,
             strokeCap = StrokeCap.Round
         )
@@ -102,10 +114,10 @@ fun RatingIndicator(
         CircularProgressIndicator(
             progress = { progress },
             modifier = Modifier
-                .size(size - 4.dp)
-                .padding(2.dp),
+                .fillMaxSize()
+                .padding(effectiveStrokeWidth / 2 + 1.dp),
             color = ratingColor,
-            strokeWidth = strokeWidth,
+            strokeWidth = effectiveStrokeWidth,
             trackColor = Color.Transparent,
             strokeCap = StrokeCap.Round
         )
@@ -114,31 +126,26 @@ fun RatingIndicator(
             Text(
                 text = stringResource(R.string.rating_percentage_format, percentageValue),
                 style = MaterialTheme.typography.labelSmall.copy(
-                    fontSize = if (size <= 40.dp) 10.sp else 12.sp,
+                    fontSize = fontSize,
                     fontWeight = FontWeight.Bold,
                     color = Color.White
-                )
+                ),
+                maxLines = 1,
+                softWrap = false,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
             )
         } else {
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Star,
-                    contentDescription = null,
-                    tint = ratingColor,
-                    modifier = Modifier.size(12.dp)
-                )
-                Spacer(modifier = Modifier.width(2.dp))
-                Text(
-                    text = stringResource(R.string.rating_score_format, boundedScore),
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                )
-            }
+            Text(
+                text = stringResource(R.string.rating_score_format, boundedScore),
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontSize = fontSize,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                ),
+                maxLines = 1,
+                softWrap = false,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
         }
     }
 }
@@ -169,6 +176,16 @@ private fun RatingIndicatorLowPreview() {
     GolekPilemTheme(darkTheme = false) {
         Surface {
             RatingIndicator(score = 4.3)
+        }
+    }
+}
+
+@Preview(name = "RatingIndicator - Compact Card 32dp (Dark)", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun RatingIndicatorCompactCardPreview() {
+    GolekPilemTheme(darkTheme = true) {
+        Surface {
+            RatingIndicator(score = 8.5, size = 32.dp, showPercentage = false)
         }
     }
 }

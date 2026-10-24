@@ -203,4 +203,81 @@ class MoviePagingSourceTest {
         val refreshKey = pagingSource.getRefreshKey(state)
         assertEquals(2, refreshKey)
     }
+
+    @Test
+    fun `load filters duplicate movie items within the same page`() = runBlocking {
+        val fakeApi = FakeMovieApiService(
+            getMoviesHandler = { page ->
+                PaginatedResponseDto(
+                    page = page,
+                    results = listOf(
+                        MovieItemDto(id = 866398, title = "The Beekeeper"),
+                        MovieItemDto(id = 866398, title = "The Beekeeper (Duplicate)"),
+                        MovieItemDto(id = 101, title = "Another Movie")
+                    ),
+                    totalPages = 5,
+                    totalResults = 100
+                )
+            }
+        )
+        val pagingSource = MoviePagingSource(fakeApi)
+
+        val params = PagingSource.LoadParams.Refresh<Int>(
+            key = null,
+            loadSize = 20,
+            placeholdersEnabled = false
+        )
+
+        val result = pagingSource.load(params)
+        val page = result as PagingSource.LoadResult.Page
+
+        assertEquals("Duplicates within the same page must be filtered", 2, page.data.size)
+        assertEquals(866398, page.data[0].id)
+        assertEquals(101, page.data[1].id)
+    }
+
+    @Test
+    fun `load filters duplicate movie items across consecutive pages`() = runBlocking {
+        val fakeApi = FakeMovieApiService(
+            getMoviesHandler = { page ->
+                when (page) {
+                    1 -> PaginatedResponseDto(
+                        page = 1,
+                        results = listOf(
+                            MovieItemDto(id = 866398, title = "The Beekeeper"),
+                            MovieItemDto(id = 101, title = "Movie 101")
+                        ),
+                        totalPages = 5,
+                        totalResults = 100
+                    )
+                    2 -> PaginatedResponseDto(
+                        page = 2,
+                        results = listOf(
+                            MovieItemDto(id = 866398, title = "The Beekeeper"), // Duplicate across pages
+                            MovieItemDto(id = 202, title = "Movie 202")
+                        ),
+                        totalPages = 5,
+                        totalResults = 100
+                    )
+                    else -> error("Unexpected page: $page")
+                }
+            }
+        )
+        val pagingSource = MoviePagingSource(fakeApi)
+
+        // Page 1
+        val page1Result = pagingSource.load(
+            PagingSource.LoadParams.Refresh(key = 1, loadSize = 20, placeholdersEnabled = false)
+        ) as PagingSource.LoadResult.Page
+        assertEquals(2, page1Result.data.size)
+        assertEquals(listOf(866398, 101), page1Result.data.map { it.id })
+
+        // Page 2
+        val page2Result = pagingSource.load(
+            PagingSource.LoadParams.Append(key = 2, loadSize = 20, placeholdersEnabled = false)
+        ) as PagingSource.LoadResult.Page
+        assertEquals("Duplicate item from page 1 must be filtered out in page 2", 1, page2Result.data.size)
+        assertEquals(202, page2Result.data.first().id)
+        assertEquals(3, page2Result.nextKey)
+    }
 }
