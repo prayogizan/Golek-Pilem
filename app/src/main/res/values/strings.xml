@@ -65,4 +65,15 @@
     <string name="detail_review_read_more">Read more</string>
     <string name="detail_review_show_less">Show less</string>
     <string name="cd_author_avatar">Avatar of %1$s</string>
+
+    <!-- Trailers & Videos -->
+    <string name="detail_watch_trailer">Watch Trailer</string>
+    <string name="detail_trailers_title">Trailers &amp; Videos</string>
+    <string name="detail_no_trailers">No trailers available for this title.</string>
+    <string name="detail_watch_on_youtube">Watch on YouTube</string>
+    <string name="cd_play_trailer">Play trailer %1$s</string>
+    <string name="cd_trailer_thumbnail">Thumbnail for %1$s</string>
+    <string name="cd_fullscreen_trailer">Play trailer in fullscreen</string>
+    <string name="cd_close_player">Close player</string>
+    <string name="trailer_official_badge">Official</string>
 </resources>

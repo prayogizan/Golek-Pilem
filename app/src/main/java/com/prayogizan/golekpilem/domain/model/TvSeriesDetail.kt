@@ -19,6 +19,7 @@ package com.prayogizan.golekpilem.domain.model
  * @property networks Collection of [Network] broadcast networks associated with the series.
  * @property status Current broadcast/production status (e.g. "Returning Series", "Ended").
  * @property reviews Collection of [Review] entities submitted for this series.
+ * @property videos Collection of [Video] entities representing trailers and promotional clips.
  */
 data class TvSeriesDetail(
     val id: Int,
@@ -36,6 +37,15 @@ data class TvSeriesDetail(
     val genres: List<Genre>,
     val networks: List<Network>,
     val status: String,
-    val reviews: List<Review> = emptyList()
-)
+    val reviews: List<Review> = emptyList(),
+    val videos: List<Video> = emptyList()
+) {
+    /**
+     * Resolves the primary official trailer, falling back to any available trailer or YouTube video.
+     */
+    val primaryTrailer: Video?
+        get() = videos.firstOrNull { it.isYouTube && it.type.equals("Trailer", ignoreCase = true) && it.isOfficial }
+            ?: videos.firstOrNull { it.isYouTube && it.type.equals("Trailer", ignoreCase = true) }
+            ?: videos.firstOrNull { it.isYouTube }
+}
 

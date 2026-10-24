@@ -55,7 +55,8 @@ fun TvSeriesDetailDto.toDomain(): TvSeriesDetail {
         genres = genres.map { it.toDomain() },
         networks = networks.map { it.toDomain() },
         status = status?.takeIf { it.isNotBlank() } ?: "Unknown",
-        reviews = reviews?.results?.map { it.toDomain() } ?: emptyList()
+        reviews = reviews?.results?.map { it.toDomain() } ?: emptyList(),
+        videos = videos.toDomainList()
     )
 }
 

@@ -48,7 +48,7 @@ class MovieRepositoryImpl(
         try {
             val detailDto = apiService.getMovieDetail(
                 movieId = movieId,
-                appendToResponse = "credits,reviews"
+                appendToResponse = "credits,reviews,videos"
             )
             emit(Resource.Success(detailDto.toDomain()))
         } catch (e: CancellationException) {

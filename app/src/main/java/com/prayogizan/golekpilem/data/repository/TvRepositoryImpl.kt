@@ -48,7 +48,7 @@ class TvRepositoryImpl(
         try {
             val detailDto = apiService.getTvSeriesDetail(
                 seriesId = seriesId,
-                appendToResponse = "credits,reviews"
+                appendToResponse = "credits,reviews,videos"
             )
             emit(Resource.Success(detailDto.toDomain()))
         } catch (e: CancellationException) {

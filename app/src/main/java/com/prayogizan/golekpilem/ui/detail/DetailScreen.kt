@@ -1,6 +1,9 @@
 package com.prayogizan.golekpilem.ui.detail
 
+import android.content.ActivityNotFoundException
+import android.content.Intent
 import android.content.res.Configuration
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,10 +21,18 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.prayogizan.golekpilem.R
@@ -31,14 +42,17 @@ import com.prayogizan.golekpilem.domain.model.Network
 import com.prayogizan.golekpilem.domain.model.ProductionCompany
 import com.prayogizan.golekpilem.domain.model.Review
 import com.prayogizan.golekpilem.domain.model.TvSeriesDetail
+import com.prayogizan.golekpilem.domain.model.Video
 import com.prayogizan.golekpilem.ui.common.ErrorScreen
 import com.prayogizan.golekpilem.ui.common.GenreChips
 import com.prayogizan.golekpilem.ui.common.LoadingScreen
 import com.prayogizan.golekpilem.ui.detail.components.CompanyNetworkSection
 import com.prayogizan.golekpilem.ui.detail.components.DetailHeader
 import com.prayogizan.golekpilem.ui.detail.components.DetailMetadata
+import com.prayogizan.golekpilem.ui.detail.components.FullScreenTrailerPlayer
 import com.prayogizan.golekpilem.ui.detail.components.InfoSection
 import com.prayogizan.golekpilem.ui.detail.components.ReviewsSection
+import com.prayogizan.golekpilem.ui.detail.components.TrailersSection
 import com.prayogizan.golekpilem.ui.detail.components.toCreditEntities
 import com.prayogizan.golekpilem.ui.detail.components.toNetworkCreditEntities
 import com.prayogizan.golekpilem.ui.theme.GolekPilemTheme
@@ -47,80 +61,120 @@ import com.prayogizan.golekpilem.ui.theme.GolekPilemTheme
  * Stateless screen displaying comprehensive metadata for movies and television series.
  *
  * Renders an immersive hero backdrop, overlapping poster card, title and info row,
- * interactive genre chips, storyline overview, and production credits.
+ * interactive genre chips, storyline overview, trailers/videos, and production credits.
  *
  * @param uiState Current immutable UI state representing loading, content, or error.
  * @param onEvent Lambda callback for dispatching user actions ([DetailUiEvent]) to the ViewModel.
  * @param onBackClick Lambda callback invoked when user navigates back to the catalog feed.
  * @param modifier Optional modifier applied to the screen root container.
+ * @param onVideoClick Optional lambda callback invoked when navigating externally to the official video. Defaults to YouTube intent.
  */
 @Composable
 fun DetailScreen(
     uiState: DetailUiState,
     onEvent: (DetailUiEvent) -> Unit,
     onBackClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onVideoClick: ((Video) -> Unit)? = null
 ) {
-    when (uiState) {
-        is DetailUiState.Loading -> {
-            Box(modifier = modifier.fillMaxSize()) {
-                LoadingScreen()
-                IconButton(
-                    onClick = onBackClick,
-                    modifier = Modifier
-                        .padding(top = 16.dp, start = 16.dp)
-                        .size(48.dp)
-                        .align(Alignment.TopStart)
-                        .background(
-                            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
-                            shape = CircleShape
-                        )
-                ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = stringResource(R.string.cd_back_button),
-                        tint = MaterialTheme.colorScheme.onSurface
-                    )
-                }
+    var activeVideoId by rememberSaveable { mutableStateOf<String?>(null) }
+    val context = LocalContext.current
+    val handleNavigateToOfficial: (Video) -> Unit = onVideoClick ?: { video ->
+        val appIntent = Intent(Intent.ACTION_VIEW, Uri.parse("vnd.youtube:${video.key}"))
+        val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse(video.youtubeUrl))
+        try {
+            context.startActivity(appIntent)
+        } catch (_: ActivityNotFoundException) {
+            context.startActivity(webIntent)
+        }
+    }
+
+    val activePlayerVideo = remember(activeVideoId, uiState) {
+        if (activeVideoId == null) null
+        else {
+            when (uiState) {
+                is DetailUiState.MovieSuccess -> uiState.detail.videos.firstOrNull { it.id == activeVideoId }
+                is DetailUiState.TvSuccess -> uiState.detail.videos.firstOrNull { it.id == activeVideoId }
+                else -> null
             }
         }
-        is DetailUiState.Error -> {
-            Box(modifier = modifier.fillMaxSize()) {
-                ErrorScreen(
-                    message = uiState.message,
-                    onRetry = { onEvent(DetailUiEvent.Retry) }
+    }
+
+    Box(modifier = modifier.fillMaxSize()) {
+        when (uiState) {
+            is DetailUiState.Loading -> {
+                Box(modifier = Modifier.fillMaxSize()) {
+                    LoadingScreen()
+                    IconButton(
+                        onClick = onBackClick,
+                        modifier = Modifier
+                            .padding(top = 16.dp, start = 16.dp)
+                            .size(48.dp)
+                            .align(Alignment.TopStart)
+                            .background(
+                                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+                                shape = CircleShape
+                            )
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.cd_back_button),
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+            }
+            is DetailUiState.Error -> {
+                Box(modifier = Modifier.fillMaxSize()) {
+                    ErrorScreen(
+                        message = uiState.message,
+                        onRetry = { onEvent(DetailUiEvent.Retry) }
+                    )
+                    IconButton(
+                        onClick = onBackClick,
+                        modifier = Modifier
+                            .padding(top = 16.dp, start = 16.dp)
+                            .size(48.dp)
+                            .align(Alignment.TopStart)
+                            .background(
+                                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+                                shape = CircleShape
+                            )
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.cd_back_button),
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+            }
+            is DetailUiState.MovieSuccess -> {
+                MovieDetailContent(
+                    detail = uiState.detail,
+                    onBackClick = onBackClick,
+                    onPlayInApp = { activeVideoId = it.id },
+                    onNavigateToOfficial = handleNavigateToOfficial,
+                    modifier = Modifier.fillMaxSize()
                 )
-                IconButton(
-                    onClick = onBackClick,
-                    modifier = Modifier
-                        .padding(top = 16.dp, start = 16.dp)
-                        .size(48.dp)
-                        .align(Alignment.TopStart)
-                        .background(
-                            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
-                            shape = CircleShape
-                        )
-                ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = stringResource(R.string.cd_back_button),
-                        tint = MaterialTheme.colorScheme.onSurface
-                    )
-                }
+            }
+            is DetailUiState.TvSuccess -> {
+                TvSeriesDetailContent(
+                    detail = uiState.detail,
+                    onBackClick = onBackClick,
+                    onPlayInApp = { activeVideoId = it.id },
+                    onNavigateToOfficial = handleNavigateToOfficial,
+                    modifier = Modifier.fillMaxSize()
+                )
             }
         }
-        is DetailUiState.MovieSuccess -> {
-            MovieDetailContent(
-                detail = uiState.detail,
-                onBackClick = onBackClick,
-                modifier = modifier
-            )
-        }
-        is DetailUiState.TvSuccess -> {
-            TvSeriesDetailContent(
-                detail = uiState.detail,
-                onBackClick = onBackClick,
-                modifier = modifier
+
+        // Fullscreen In-App Landscape Player Overlay
+        activePlayerVideo?.let { video ->
+            FullScreenTrailerPlayer(
+                video = video,
+                onDismiss = { activeVideoId = null },
+                onNavigateToOfficial = handleNavigateToOfficial
             )
         }
     }
@@ -130,6 +184,8 @@ fun DetailScreen(
 private fun MovieDetailContent(
     detail: MovieDetail,
     onBackClick: () -> Unit,
+    onPlayInApp: (Video) -> Unit,
+    onNavigateToOfficial: (Video) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val scrollState = rememberScrollState()
@@ -175,6 +231,15 @@ private fun MovieDetailContent(
             modifier = Modifier.padding(horizontal = 16.dp)
         )
 
+        if (detail.videos.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(24.dp))
+            TrailersSection(
+                videos = detail.videos,
+                onNavigateToOfficial = onNavigateToOfficial,
+                onOpenFullscreen = onPlayInApp
+            )
+        }
+
         if (detail.productionCompanies.isNotEmpty()) {
             Spacer(modifier = Modifier.height(24.dp))
             CompanyNetworkSection(
@@ -199,6 +264,8 @@ private fun MovieDetailContent(
 private fun TvSeriesDetailContent(
     detail: TvSeriesDetail,
     onBackClick: () -> Unit,
+    onPlayInApp: (Video) -> Unit,
+    onNavigateToOfficial: (Video) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val scrollState = rememberScrollState()
@@ -244,6 +311,15 @@ private fun TvSeriesDetailContent(
             content = detail.overview,
             modifier = Modifier.padding(horizontal = 16.dp)
         )
+
+        if (detail.videos.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(24.dp))
+            TrailersSection(
+                videos = detail.videos,
+                onNavigateToOfficial = onNavigateToOfficial,
+                onOpenFullscreen = onPlayInApp
+            )
+        }
 
         if (detail.networks.isNotEmpty()) {
             Spacer(modifier = Modifier.height(24.dp))
@@ -299,6 +375,26 @@ private val sampleMovieDetail = MovieDetail(
             avatarUrl = null,
             createdAt = "2024-07-25"
         )
+    ),
+    videos = listOf(
+        Video(
+            id = "vid_m1",
+            name = "Official Trailer",
+            key = "73_1biulkYk",
+            site = "YouTube",
+            type = "Trailer",
+            isOfficial = true,
+            publishedAt = "2024-04-22"
+        ),
+        Video(
+            id = "vid_m2",
+            name = "Official Teaser",
+            key = "uJMCNJP2ipI",
+            site = "YouTube",
+            type = "Teaser",
+            isOfficial = true,
+            publishedAt = "2024-02-11"
+        )
     )
 )
 
@@ -332,6 +428,17 @@ private val sampleTvDetail = TvSeriesDetail(
             rating = 9.2,
             avatarUrl = null,
             createdAt = "2022-07-05"
+        )
+    ),
+    videos = listOf(
+        Video(
+            id = "vid_tv1",
+            name = "Stranger Things 4 | Official Trailer",
+            key = "yQEondeGvKo",
+            site = "YouTube",
+            type = "Trailer",
+            isOfficial = true,
+            publishedAt = "2022-04-12"
         )
     )
 )

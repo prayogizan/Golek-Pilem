@@ -6,7 +6,9 @@ import com.prayogizan.golekpilem.data.remote.dto.MovieDetailDto
 import com.prayogizan.golekpilem.data.remote.dto.MovieItemDto
 import com.prayogizan.golekpilem.data.remote.dto.ProductionCompanyDto
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class MovieMapperTest {
@@ -214,4 +216,78 @@ class MovieMapperTest {
         assertNull(domain.rating)
         assertEquals("2024-08-01", domain.createdAt)
     }
+
+    @Test
+    fun `toDomain maps VideoDto with valid YouTube details correctly`() {
+        val videoDto = com.prayogizan.golekpilem.data.remote.dto.VideoDto(
+            id = "vid_123",
+            name = "Official Trailer",
+            key = "73_1biulkYk",
+            site = "YouTube",
+            type = "Trailer",
+            official = true,
+            publishedAt = "2024-04-22T13:00:15.000Z"
+        )
+
+        val domain = videoDto.toDomain()
+
+        assertNotNull(domain)
+        assertEquals("vid_123", domain?.id)
+        assertEquals("Official Trailer", domain?.name)
+        assertEquals("73_1biulkYk", domain?.key)
+        assertEquals("YouTube", domain?.site)
+        assertEquals("Trailer", domain?.type)
+        assertTrue(domain?.isOfficial == true)
+        assertTrue(domain?.isYouTube == true)
+        assertEquals("https://www.youtube.com/watch?v=73_1biulkYk", domain?.youtubeUrl)
+        assertEquals("https://img.youtube.com/vi/73_1biulkYk/hqdefault.jpg", domain?.thumbnailUrl)
+        assertEquals("2024-04-22", domain?.publishedAt)
+    }
+
+    @Test
+    fun `toDomain returns null when VideoDto has blank key or id`() {
+        val missingKey = com.prayogizan.golekpilem.data.remote.dto.VideoDto(
+            id = "vid_1",
+            key = "",
+            name = "Trailer"
+        )
+        val missingId = com.prayogizan.golekpilem.data.remote.dto.VideoDto(
+            id = null,
+            key = "key123",
+            name = "Trailer"
+        )
+
+        assertNull(missingKey.toDomain())
+        assertNull(missingId.toDomain())
+    }
+
+    @Test
+    fun `toDomainList maps VideosResponseDto and ignores invalid entries`() {
+        val responseDto = com.prayogizan.golekpilem.data.remote.dto.VideosResponseDto(
+            results = listOf(
+                com.prayogizan.golekpilem.data.remote.dto.VideoDto(
+                    id = "v1",
+                    key = "key1",
+                    name = "Trailer 1"
+                ),
+                com.prayogizan.golekpilem.data.remote.dto.VideoDto(
+                    id = "",
+                    key = "key2",
+                    name = "Invalid"
+                ),
+                com.prayogizan.golekpilem.data.remote.dto.VideoDto(
+                    id = "v3",
+                    key = "",
+                    name = "Invalid"
+                )
+            )
+        )
+
+        val domainList = responseDto.toDomainList()
+
+        assertEquals(1, domainList.size)
+        assertEquals("v1", domainList.first().id)
+        assertEquals("key1", domainList.first().key)
+    }
 }
+
