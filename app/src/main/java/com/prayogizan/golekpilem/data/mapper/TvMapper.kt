@@ -54,7 +54,8 @@ fun TvSeriesDetailDto.toDomain(): TvSeriesDetail {
         voteCount = voteCount ?: 0,
         genres = genres.map { it.toDomain() },
         networks = networks.map { it.toDomain() },
-        status = status?.takeIf { it.isNotBlank() } ?: "Unknown"
+        status = status?.takeIf { it.isNotBlank() } ?: "Unknown",
+        reviews = reviews?.results?.map { it.toDomain() } ?: emptyList()
     )
 }
 

@@ -166,4 +166,52 @@ class MovieMapperTest {
         assertEquals(0.0, sanitizeVoteAverage(null), 0.001)
         assertEquals(0.0, sanitizeVoteAverage(-1.0), 0.001)
     }
+
+    @Test
+    fun `toDomain maps ReviewDto with TMDB CDN avatar correctly`() {
+        val reviewDto = com.prayogizan.golekpilem.data.remote.dto.ReviewDto(
+            id = "rev_123",
+            author = "ReviewerGuy",
+            authorDetails = com.prayogizan.golekpilem.data.remote.dto.AuthorDetailsDto(
+                name = "John Doe",
+                username = "johndoe",
+                avatarPath = "/avatar_path.jpg",
+                rating = 8.5
+            ),
+            content = "Great movie!",
+            createdAt = "2024-07-25T14:30:00.000Z"
+        )
+
+        val domain = reviewDto.toDomain()
+
+        assertEquals("rev_123", domain.id)
+        assertEquals("John Doe", domain.author)
+        assertEquals("Great movie!", domain.content)
+        assertEquals(8.5, domain.rating ?: 0.0, 0.001)
+        assertEquals("${ApiConstants.IMAGE_BASE_URL}w185/avatar_path.jpg", domain.avatarUrl)
+        assertEquals("2024-07-25", domain.createdAt)
+    }
+
+    @Test
+    fun `toDomain normalizes Gravatar avatar in ReviewDto correctly`() {
+        val reviewDto = com.prayogizan.golekpilem.data.remote.dto.ReviewDto(
+            id = "rev_gravatar",
+            author = "GravatarUser",
+            authorDetails = com.prayogizan.golekpilem.data.remote.dto.AuthorDetailsDto(
+                name = "",
+                username = "gravatar_user",
+                avatarPath = "/https://secure.gravatar.com/avatar/abc12345.jpg",
+                rating = null
+            ),
+            content = "Detailed critique",
+            createdAt = "2024-08-01"
+        )
+
+        val domain = reviewDto.toDomain()
+
+        assertEquals("GravatarUser", domain.author)
+        assertEquals("https://secure.gravatar.com/avatar/abc12345.jpg", domain.avatarUrl)
+        assertNull(domain.rating)
+        assertEquals("2024-08-01", domain.createdAt)
+    }
 }

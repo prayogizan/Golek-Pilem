@@ -19,6 +19,7 @@ import kotlinx.serialization.Serializable
  * @property genres Collection of genres linked to the movie.
  * @property productionCompanies Collection of companies associated with movie production.
  * @property status Current commercial status (e.g. "Released", "In Production").
+ * @property reviews Embedded reviews sub-resource, or `null`.
  */
 @Serializable
 data class MovieDetailDto(
@@ -34,5 +35,6 @@ data class MovieDetailDto(
     @SerialName("vote_count") val voteCount: Int? = null,
     @SerialName("genres") val genres: List<GenreDto> = emptyList(),
     @SerialName("production_companies") val productionCompanies: List<ProductionCompanyDto> = emptyList(),
-    @SerialName("status") val status: String? = null
+    @SerialName("status") val status: String? = null,
+    @SerialName("reviews") val reviews: ReviewsResponseDto? = null
 )

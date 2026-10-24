@@ -5,10 +5,12 @@ import com.prayogizan.golekpilem.data.remote.dto.GenreDto
 import com.prayogizan.golekpilem.data.remote.dto.MovieDetailDto
 import com.prayogizan.golekpilem.data.remote.dto.MovieItemDto
 import com.prayogizan.golekpilem.data.remote.dto.ProductionCompanyDto
+import com.prayogizan.golekpilem.data.remote.dto.ReviewDto
 import com.prayogizan.golekpilem.domain.model.Genre
 import com.prayogizan.golekpilem.domain.model.Movie
 import com.prayogizan.golekpilem.domain.model.MovieDetail
 import com.prayogizan.golekpilem.domain.model.ProductionCompany
+import com.prayogizan.golekpilem.domain.model.Review
 import kotlin.math.roundToInt
 
 /**
@@ -53,7 +55,45 @@ fun MovieDetailDto.toDomain(): MovieDetail {
         voteCount = voteCount ?: 0,
         genres = genres.map { it.toDomain() },
         productionCompanies = productionCompanies.map { it.toDomain() },
-        status = status?.takeIf { it.isNotBlank() } ?: "Unknown"
+        status = status?.takeIf { it.isNotBlank() } ?: "Unknown",
+        reviews = reviews?.results?.map { it.toDomain() } ?: emptyList()
+    )
+}
+
+/**
+ * Maps raw [ReviewDto] to domain [Review] entity.
+ *
+ * Applies defensive null checks, normalizes author avatar URLs (handling both
+ * TMDB CDN paths and external Gravatar URLs), and extracts formatted submission dates.
+ *
+ * @receiver The raw DTO received from TMDB.
+ * @return A sanitized domain [Review] instance.
+ */
+fun ReviewDto.toDomain(): Review {
+    val authorName = authorDetails?.name?.takeIf { it.isNotBlank() }
+        ?: author?.takeIf { it.isNotBlank() }
+        ?: authorDetails?.username?.takeIf { it.isNotBlank() }
+        ?: "Anonymous"
+
+    val rawAvatar = authorDetails?.avatarPath
+    val normalizedAvatar = when {
+        rawAvatar.isNullOrBlank() -> null
+        rawAvatar.startsWith("/http://") || rawAvatar.startsWith("/https://") -> rawAvatar.substring(1)
+        rawAvatar.startsWith("http://") || rawAvatar.startsWith("https://") -> rawAvatar
+        else -> "${ApiConstants.IMAGE_BASE_URL}w185$rawAvatar"
+    }
+
+    val formattedDate = createdAt?.split("T")?.firstOrNull()?.takeIf { it.isNotBlank() }
+        ?: createdAt?.takeIf { it.isNotBlank() }
+        ?: "N/A"
+
+    return Review(
+        id = id,
+        author = authorName,
+        content = content.orEmpty(),
+        rating = authorDetails?.rating?.let { sanitizeVoteAverage(it) },
+        avatarUrl = normalizedAvatar,
+        createdAt = formattedDate
     )
 }
 

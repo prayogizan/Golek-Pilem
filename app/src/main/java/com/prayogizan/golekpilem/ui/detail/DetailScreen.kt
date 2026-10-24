@@ -29,6 +29,7 @@ import com.prayogizan.golekpilem.domain.model.Genre
 import com.prayogizan.golekpilem.domain.model.MovieDetail
 import com.prayogizan.golekpilem.domain.model.Network
 import com.prayogizan.golekpilem.domain.model.ProductionCompany
+import com.prayogizan.golekpilem.domain.model.Review
 import com.prayogizan.golekpilem.domain.model.TvSeriesDetail
 import com.prayogizan.golekpilem.ui.common.ErrorScreen
 import com.prayogizan.golekpilem.ui.common.GenreChips
@@ -37,6 +38,7 @@ import com.prayogizan.golekpilem.ui.detail.components.CompanyNetworkSection
 import com.prayogizan.golekpilem.ui.detail.components.DetailHeader
 import com.prayogizan.golekpilem.ui.detail.components.DetailMetadata
 import com.prayogizan.golekpilem.ui.detail.components.InfoSection
+import com.prayogizan.golekpilem.ui.detail.components.ReviewsSection
 import com.prayogizan.golekpilem.ui.detail.components.toCreditEntities
 import com.prayogizan.golekpilem.ui.detail.components.toNetworkCreditEntities
 import com.prayogizan.golekpilem.ui.theme.GolekPilemTheme
@@ -181,6 +183,14 @@ private fun MovieDetailContent(
             )
         }
 
+        if (detail.reviews.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(24.dp))
+            ReviewsSection(
+                reviews = detail.reviews,
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
+        }
+
         Spacer(modifier = Modifier.height(32.dp))
     }
 }
@@ -243,6 +253,14 @@ private fun TvSeriesDetailContent(
             )
         }
 
+        if (detail.reviews.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(24.dp))
+            ReviewsSection(
+                reviews = detail.reviews,
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
+        }
+
         Spacer(modifier = Modifier.height(32.dp))
     }
 }
@@ -271,7 +289,17 @@ private val sampleMovieDetail = MovieDetail(
         ProductionCompany(id = 420, name = "Marvel Studios", logoUrl = null),
         ProductionCompany(id = 104, name = "21 Laps Entertainment", logoUrl = null)
     ),
-    status = "Released"
+    status = "Released",
+    reviews = listOf(
+        Review(
+            id = "rev_m1",
+            author = "CinemaCritique",
+            content = "Deadpool & Wolverine delivers non-stop visceral comedy and glorious action sequences. The dynamic between Reynolds and Jackman elevates the entire cinematic journey.",
+            rating = 8.5,
+            avatarUrl = null,
+            createdAt = "2024-07-25"
+        )
+    )
 )
 
 private val sampleTvDetail = TvSeriesDetail(
@@ -295,7 +323,17 @@ private val sampleTvDetail = TvSeriesDetail(
     networks = listOf(
         Network(id = 213, name = "Netflix", logoUrl = null)
     ),
-    status = "Returning Series"
+    status = "Returning Series",
+    reviews = listOf(
+        Review(
+            id = "rev_tv1",
+            author = "SciFiExplorer",
+            content = "A masterclass in 80s nostalgia, suspenseful writing, and extraordinary character development. Season four raised the stakes to phenomenal heights.",
+            rating = 9.2,
+            avatarUrl = null,
+            createdAt = "2022-07-05"
+        )
+    )
 )
 
 @Preview(name = "DetailScreen Movie - Light Theme", showBackground = true)

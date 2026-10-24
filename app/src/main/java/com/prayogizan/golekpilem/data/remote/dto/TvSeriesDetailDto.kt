@@ -21,6 +21,7 @@ import kotlinx.serialization.Serializable
  * @property genres Collection of genres linked to the television series.
  * @property networks Collection of broadcast/streaming networks associated with the series.
  * @property status Current production/broadcast status (e.g. "Returning Series", "Ended").
+ * @property reviews Embedded reviews sub-resource, or `null`.
  */
 @Serializable
 data class TvSeriesDetailDto(
@@ -38,5 +39,6 @@ data class TvSeriesDetailDto(
     @SerialName("vote_count") val voteCount: Int? = null,
     @SerialName("genres") val genres: List<GenreDto> = emptyList(),
     @SerialName("networks") val networks: List<NetworkDto> = emptyList(),
-    @SerialName("status") val status: String? = null
+    @SerialName("status") val status: String? = null,
+    @SerialName("reviews") val reviews: ReviewsResponseDto? = null
 )

@@ -16,6 +16,7 @@ package com.prayogizan.golekpilem.domain.model
  * @property genres Collection of [Genre] entities categorized under this movie.
  * @property productionCompanies Collection of [ProductionCompany] entities involved in production.
  * @property status Current commercial release status (e.g. "Released", "Post Production").
+ * @property reviews Collection of [Review] entities submitted for this movie.
  */
 data class MovieDetail(
     val id: Int,
@@ -30,5 +31,7 @@ data class MovieDetail(
     val voteCount: Int,
     val genres: List<Genre>,
     val productionCompanies: List<ProductionCompany>,
-    val status: String
+    val status: String,
+    val reviews: List<Review> = emptyList()
 )
+

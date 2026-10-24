@@ -46,7 +46,10 @@ class TvRepositoryImpl(
     override fun getTvSeriesDetail(seriesId: Int): Flow<Resource<TvSeriesDetail>> = flow {
         emit(Resource.Loading)
         try {
-            val detailDto = apiService.getTvSeriesDetail(seriesId = seriesId)
+            val detailDto = apiService.getTvSeriesDetail(
+                seriesId = seriesId,
+                appendToResponse = "credits,reviews"
+            )
             emit(Resource.Success(detailDto.toDomain()))
         } catch (e: CancellationException) {
             throw e

@@ -57,4 +57,12 @@
     <string name="cd_detail_poster">Poster artwork for %1$s</string>
     <string name="cd_company_logo">Logo for %1$s</string>
     <string name="cd_network_logo">Logo for %1$s</string>
+
+    <!-- Reviews Section -->
+    <string name="detail_reviews_title">Reviews</string>
+    <string name="detail_reviews_count_format">Reviews (%1$d)</string>
+    <string name="detail_no_reviews">No reviews available yet for this title.</string>
+    <string name="detail_review_read_more">Read more</string>
+    <string name="detail_review_show_less">Show less</string>
+    <string name="cd_author_avatar">Avatar of %1$s</string>
 </resources>
