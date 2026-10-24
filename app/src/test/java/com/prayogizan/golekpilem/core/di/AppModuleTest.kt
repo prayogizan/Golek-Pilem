@@ -1,6 +1,12 @@
 package com.prayogizan.golekpilem.core.di
 
 import com.prayogizan.golekpilem.data.remote.api.TmdbApiService
+import com.prayogizan.golekpilem.domain.repository.MovieRepository
+import com.prayogizan.golekpilem.domain.repository.TvRepository
+import com.prayogizan.golekpilem.domain.usecase.GetMovieDetailUseCase
+import com.prayogizan.golekpilem.domain.usecase.GetMoviesUseCase
+import com.prayogizan.golekpilem.domain.usecase.GetTvSeriesDetailUseCase
+import com.prayogizan.golekpilem.domain.usecase.GetTvSeriesUseCase
 import org.junit.After
 import org.junit.Assert.assertNotNull
 import org.junit.Before
@@ -32,5 +38,23 @@ class AppModuleTest : KoinTest {
 
         val apiService: TmdbApiService = get()
         assertNotNull("TmdbApiService should be resolved via appModule included dataModule", apiService)
+
+        val movieRepository: MovieRepository = get()
+        assertNotNull("MovieRepository should be resolved via dataModule", movieRepository)
+
+        val tvRepository: TvRepository = get()
+        assertNotNull("TvRepository should be resolved via dataModule", tvRepository)
+
+        val getMoviesUseCase: GetMoviesUseCase = get()
+        assertNotNull("GetMoviesUseCase should be resolved via domainModule", getMoviesUseCase)
+
+        val getTvSeriesUseCase: GetTvSeriesUseCase = get()
+        assertNotNull("GetTvSeriesUseCase should be resolved via domainModule", getTvSeriesUseCase)
+
+        val getMovieDetailUseCase: GetMovieDetailUseCase = get()
+        assertNotNull("GetMovieDetailUseCase should be resolved via domainModule", getMovieDetailUseCase)
+
+        val getTvSeriesDetailUseCase: GetTvSeriesDetailUseCase = get()
+        assertNotNull("GetTvSeriesDetailUseCase should be resolved via domainModule", getTvSeriesDetailUseCase)
     }
 }

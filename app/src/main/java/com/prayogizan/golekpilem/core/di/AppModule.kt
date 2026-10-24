@@ -1,6 +1,7 @@
 package com.prayogizan.golekpilem.core.di
 
 import com.prayogizan.golekpilem.data.di.dataModule
+import com.prayogizan.golekpilem.domain.di.domainModule
 import org.koin.dsl.module
 
 /**
@@ -11,7 +12,8 @@ import org.koin.dsl.module
 val appModule = module {
     includes(
         networkModule,
-        dataModule
+        dataModule,
+        domainModule
     )
 }
 
