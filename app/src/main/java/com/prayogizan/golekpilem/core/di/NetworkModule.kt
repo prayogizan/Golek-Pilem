@@ -12,6 +12,16 @@ import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import java.util.concurrent.TimeUnit
 
+/**
+ * Core network dependency injection module providing TMDB HTTP networking infrastructure.
+ *
+ * Provides singletons for:
+ * - [Json]: Pre-configured JSON deserializer.
+ * - [HttpLoggingInterceptor]: HTTP request and response logger.
+ * - [AuthInterceptor]: TMDB Bearer authentication header injector.
+ * - [OkHttpClient]: HTTP transport client with timeouts and interceptor chain.
+ * - [Retrofit]: REST adapter targeted at the TMDB API v3 base URL.
+ */
 val networkModule = module {
 
     single(named("TmdbAccessToken")) {
