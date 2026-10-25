@@ -7,13 +7,16 @@ import com.prayogizan.golekpilem.domain.usecase.GetMovieDetailUseCase
 import com.prayogizan.golekpilem.domain.usecase.GetMoviesUseCase
 import com.prayogizan.golekpilem.domain.usecase.GetTvSeriesDetailUseCase
 import com.prayogizan.golekpilem.domain.usecase.GetTvSeriesUseCase
+import android.content.Context
 import androidx.lifecycle.SavedStateHandle
 import com.prayogizan.golekpilem.ui.detail.DetailViewModel
 import com.prayogizan.golekpilem.ui.main.MainViewModel
+import io.mockk.mockk
 import org.junit.After
 import org.junit.Assert.assertNotNull
 import org.junit.Before
 import org.junit.Test
+import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
 import org.koin.core.parameter.parametersOf
@@ -27,6 +30,7 @@ class AppModuleTest : KoinTest {
     @Before
     fun setUp() {
         startKoin {
+            androidContext(mockk<Context>(relaxed = true))
             modules(appModule)
         }
     }
