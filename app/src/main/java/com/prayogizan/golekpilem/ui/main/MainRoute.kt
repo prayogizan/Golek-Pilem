@@ -2,9 +2,13 @@ package com.prayogizan.golekpilem.ui.main
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.paging.compose.collectAsLazyPagingItems
+import com.prayogizan.golekpilem.ui.common.StorageSettingsRoute
 import org.koin.androidx.compose.koinViewModel
 
 /**
@@ -12,7 +16,7 @@ import org.koin.androidx.compose.koinViewModel
  *
  * Resolves [MainViewModel] via Koin dependency injection, collects reactive [PagingData]
  * and [MainUiState] with lifecycle safety, and forwards user actions and navigation lambdas
- * to the stateless [MainScreen].
+ * to the stateless [MainScreen]. Hosts the storage diagnostics dialog.
  *
  * @param onItemClick Navigation callback triggered when a user taps a movie or TV series card.
  * @param modifier Optional modifier applied to the screen root container.
@@ -27,6 +31,7 @@ fun MainRoute(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val movies = viewModel.movies.collectAsLazyPagingItems()
     val tvSeries = viewModel.tvSeries.collectAsLazyPagingItems()
+    var showStorageDialog by rememberSaveable { mutableStateOf(false) }
 
     MainScreen(
         uiState = uiState,
@@ -34,6 +39,14 @@ fun MainRoute(
         tvSeries = tvSeries,
         onEvent = viewModel::onEvent,
         onItemClick = onItemClick,
+        onStorageClick = { showStorageDialog = true },
         modifier = modifier
     )
+
+    if (showStorageDialog) {
+        StorageSettingsRoute(
+            onDismissRequest = { showStorageDialog = false }
+        )
+    }
 }
+

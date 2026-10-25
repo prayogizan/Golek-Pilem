@@ -19,7 +19,9 @@ class GetMovieDetailUseCase(
      * Executes the use case for the given movie identifier.
      *
      * @param movieId The unique TMDB identifier of the target movie.
+     * @param forceRefresh Whether to bypass local cache and force fresh remote retrieval.
      * @return A cold [Flow] emitting the retrieval lifecycle state encapsulated within [Resource].
      */
-    operator fun invoke(movieId: Int): Flow<Resource<MovieDetail>> = movieRepository.getMovieDetail(movieId)
+    operator fun invoke(movieId: Int, forceRefresh: Boolean = false): Flow<Resource<MovieDetail>> =
+        movieRepository.getMovieDetail(movieId, forceRefresh)
 }

@@ -1,17 +1,27 @@
 package com.prayogizan.golekpilem.ui.main
 
+import com.prayogizan.golekpilem.domain.model.MediaItem
+
 /**
- * Immutable UI state model for the main dual-tab catalog feed screen.
+ * Immutable UI state model for the main catalog feed screen.
  *
  * Adheres strictly to the Unidirectional Data Flow (UDF) pattern. In accordance with
  * Paging 3 architecture, the paginated data streams and load states for movies and TV series
  * are streamed reactively and consumed via [androidx.paging.compose.LazyPagingItems], while
- * [MainUiState] maintains the active tab selection and screen-level UI states.
+ * [MainUiState] maintains active tab selection, personal watchlist items, and the reactive badge count.
  *
- * @property selectedTabIndex Currently active tab (0 = Movies, 1 = TV Series).
+ * @property selectedTabIndex Currently active tab (0 = Movies, 1 = TV Series, 2 = Watchlist).
+ * @property watchlistItems Current list of saved titles in the user's watchlist.
+ * @property watchlistCount Total count of titles saved in the watchlist driving the reactive tab badge.
+ * @property isWatchlistLoading Indicates whether the initial watchlist query is in flight.
+ * @property isWatchlistRefreshing Indicates whether a pull-to-refresh reload is active on the watchlist tab.
  */
 data class MainUiState(
-    val selectedTabIndex: Int = 0
+    val selectedTabIndex: Int = 0,
+    val watchlistItems: List<MediaItem> = emptyList(),
+    val watchlistCount: Int = 0,
+    val isWatchlistLoading: Boolean = false,
+    val isWatchlistRefreshing: Boolean = false
 )
 
 /**
@@ -20,9 +30,9 @@ data class MainUiState(
 sealed interface MainUiEvent {
 
     /**
-     * Dispatched when the user switches tabs between Movies and TV Series.
+     * Dispatched when the user switches tabs between Movies, TV Series, and Watchlist.
      *
-     * @property index Target tab index (0 = Movies, 1 = TV Series).
+     * @property index Target tab index (0 = Movies, 1 = TV Series, 2 = Watchlist).
      */
     data class SelectTab(val index: Int) : MainUiEvent
 
@@ -32,4 +42,9 @@ sealed interface MainUiEvent {
      * @property tabIndex Target tab index to retry.
      */
     data class Retry(val tabIndex: Int) : MainUiEvent
+
+    /**
+     * Dispatched when the user triggers a pull-to-refresh swipe gesture on the Watchlist tab.
+     */
+    data object RefreshWatchlist : MainUiEvent
 }

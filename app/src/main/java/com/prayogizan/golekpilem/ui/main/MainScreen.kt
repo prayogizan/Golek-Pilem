@@ -12,8 +12,16 @@ import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Storage
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Scaffold
@@ -21,6 +29,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -44,10 +53,12 @@ import com.prayogizan.golekpilem.R
 import kotlinx.coroutines.flow.flowOf
 import com.prayogizan.golekpilem.core.util.ErrorMessageResolver
 import com.prayogizan.golekpilem.core.util.ErrorType
+import com.prayogizan.golekpilem.domain.model.MediaItem
 import com.prayogizan.golekpilem.domain.model.Movie
 import com.prayogizan.golekpilem.domain.model.TvSeries
 import com.prayogizan.golekpilem.ui.common.ErrorScreen
 import com.prayogizan.golekpilem.ui.main.components.EmptyFeedView
+import com.prayogizan.golekpilem.ui.main.components.EmptyWatchlistView
 import com.prayogizan.golekpilem.ui.main.components.MediaGridCard
 import com.prayogizan.golekpilem.ui.main.components.MediaGridCardPlaceholder
 import com.prayogizan.golekpilem.ui.main.components.PaginationErrorItem
@@ -70,6 +81,7 @@ import kotlin.math.roundToInt
  * @param tvSeries Paginated collection of popular TV series.
  * @param onEvent Callback dispatching user events ([MainUiEvent]) to the ViewModel.
  * @param onItemClick Callback triggered when the user taps a movie or series card.
+ * @param onStorageClick Callback triggered when the storage diagnostics action button is tapped.
  * @param modifier Optional modifier applied to the root [Scaffold].
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -80,11 +92,13 @@ fun MainScreen(
     tvSeries: LazyPagingItems<TvSeries>,
     onEvent: (MainUiEvent) -> Unit,
     onItemClick: (id: Int, mediaType: String) -> Unit,
+    onStorageClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     // Preserve independent scroll states across tab selections
     val moviesGridState = rememberSaveable(saver = LazyStaggeredGridState.Saver) { LazyStaggeredGridState() }
     val tvSeriesGridState = rememberSaveable(saver = LazyStaggeredGridState.Saver) { LazyStaggeredGridState() }
+    val watchlistGridState = rememberSaveable(saver = LazyStaggeredGridState.Saver) { LazyStaggeredGridState() }
 
     // Scroll behavior that collapses header on scroll down and reveals it immediately on scroll up
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
@@ -120,18 +134,29 @@ fun MainScreen(
                                 style = MaterialTheme.typography.titleLarge
                             )
                         },
+                        actions = {
+                            IconButton(onClick = onStorageClick) {
+                                Icon(
+                                    imageVector = Icons.Outlined.Storage,
+                                    contentDescription = stringResource(R.string.cd_storage_diagnostics),
+                                    tint = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        },
                         colors = TopAppBarDefaults.topAppBarColors(
                             containerColor = MaterialTheme.colorScheme.surface
                         )
                     )
 
-                    // Dual Tab Row (Movies & TV Series)
+
+                    // Triple Tab Row (Movies, TV Series & Watchlist)
                     PrimaryTabRow(
                         selectedTabIndex = uiState.selectedTabIndex,
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         val moviesCd = stringResource(R.string.cd_movie_tab)
                         val tvCd = stringResource(R.string.cd_tv_tab)
+                        val watchlistCd = stringResource(R.string.cd_watchlist_tab)
 
                         Tab(
                             selected = uiState.selectedTabIndex == 0,
@@ -156,6 +181,33 @@ fun MainScreen(
                             },
                             modifier = Modifier.semantics { contentDescription = tvCd }
                         )
+
+                        Tab(
+                            selected = uiState.selectedTabIndex == 2,
+                            onClick = { onEvent(MainUiEvent.SelectTab(2)) },
+                            text = {
+                                BadgedBox(
+                                    badge = {
+                                        if (uiState.watchlistCount > 0) {
+                                            Badge(
+                                                containerColor = MaterialTheme.colorScheme.primary,
+                                                contentColor = MaterialTheme.colorScheme.onPrimary
+                                            ) {
+                                                Text(
+                                                    text = if (uiState.watchlistCount > 99) "99+" else uiState.watchlistCount.toString()
+                                                )
+                                            }
+                                        }
+                                    }
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.tab_watchlist),
+                                        fontWeight = if (uiState.selectedTabIndex == 2) FontWeight.Bold else FontWeight.Medium
+                                    )
+                                }
+                            },
+                            modifier = Modifier.semantics { contentDescription = watchlistCd }
+                        )
                     }
                 }
             }
@@ -167,26 +219,37 @@ fun MainScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            if (uiState.selectedTabIndex == 0) {
-                MovieFeedGrid(
-                    movies = movies,
-                    gridState = moviesGridState,
-                    onItemClick = onItemClick
-                )
-            } else {
-                TvSeriesFeedGrid(
-                    tvSeries = tvSeries,
-                    gridState = tvSeriesGridState,
-                    onItemClick = onItemClick
-                )
+            when (uiState.selectedTabIndex) {
+                0 -> {
+                    MovieFeedGrid(
+                        movies = movies,
+                        gridState = moviesGridState,
+                        onItemClick = onItemClick
+                    )
+                }
+                1 -> {
+                    TvSeriesFeedGrid(
+                        tvSeries = tvSeries,
+                        gridState = tvSeriesGridState,
+                        onItemClick = onItemClick
+                    )
+                }
+                2 -> {
+                    WatchlistFeedGrid(
+                        items = uiState.watchlistItems,
+                        isRefreshing = uiState.isWatchlistRefreshing,
+                        onRefresh = { onEvent(MainUiEvent.RefreshWatchlist) },
+                        gridState = watchlistGridState,
+                        onItemClick = onItemClick,
+                        onExploreClick = { onEvent(MainUiEvent.SelectTab(0)) }
+                    )
+                }
             }
         }
     }
 }
 
-/**
- * 2-column staggered grid rendering paginated movie cards with skeleton shimmer and error handling.
- */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MovieFeedGrid(
     movies: LazyPagingItems<Movie>,
@@ -194,102 +257,116 @@ private fun MovieFeedGrid(
     onItemClick: (id: Int, mediaType: String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val refreshState = movies.loadState.refresh
+    val isRefreshing = movies.loadState.refresh is LoadState.Loading && movies.itemCount > 0
 
-    when {
-        refreshState is LoadState.Loading && movies.itemCount == 0 -> {
-            LazyVerticalStaggeredGrid(
-                columns = StaggeredGridCells.Fixed(2),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalItemSpacing = 16.dp,
-                modifier = modifier.fillMaxSize()
-            ) {
-                items(count = 5) { index ->
-                    val placeholderRatio = when (index % 3) {
-                        0 -> 0.62f
-                        1 -> 0.72f
-                        else -> 2f / 3f
-                    }
-                    MediaGridCardPlaceholder(aspectRatio = placeholderRatio)
-                }
-            }
-        }
-        refreshState is LoadState.Error && movies.itemCount == 0 -> {
-            val errorType = ErrorMessageResolver.resolve(refreshState.error)
-            val errorMessage = if (errorType is ErrorType.Generic && !errorType.customMessage.isNullOrBlank()) {
-                errorType.customMessage
-            } else {
-                stringResource(errorType.messageRes)
-            }
-            ErrorScreen(
-                title = stringResource(errorType.titleRes),
-                message = errorMessage,
-                isNetworkError = errorType.isNetworkIssue,
-                onRetry = { movies.retry() },
-                modifier = modifier.fillMaxSize()
-            )
-        }
-        movies.itemCount == 0 && refreshState is LoadState.NotLoading -> {
-            EmptyFeedView(
-                onRefresh = { movies.refresh() },
-                modifier = modifier.fillMaxSize()
-            )
-        }
-        else -> {
-            LazyVerticalStaggeredGrid(
-                columns = StaggeredGridCells.Fixed(2),
-                state = gridState,
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalItemSpacing = 16.dp,
-                modifier = modifier.fillMaxSize()
-            ) {
-                items(
-                    count = movies.itemCount,
-                    key = movies.itemKey { it.id }
-                ) { index ->
-                    val movie = movies[index]
-                    if (movie != null) {
-                        val itemAspectRatio = when (movie.id % 3) {
+    PullToRefreshBox(
+        isRefreshing = isRefreshing,
+        onRefresh = { movies.refresh() },
+        modifier = modifier.fillMaxSize()
+    ) {
+        val refreshState = movies.loadState.refresh
+
+        when {
+            refreshState is LoadState.Loading && movies.itemCount == 0 -> {
+                LazyVerticalStaggeredGrid(
+                    columns = StaggeredGridCells.Fixed(2),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalItemSpacing = 16.dp,
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    items(count = 5) { index ->
+                        val placeholderRatio = when (index % 3) {
                             0 -> 0.62f
                             1 -> 0.72f
                             else -> 2f / 3f
                         }
-                        MediaGridCard(
-                            id = movie.id,
-                            title = movie.title,
-                            posterUrl = movie.posterUrl,
-                            releaseYear = movie.releaseYear,
-                            voteAverage = movie.voteAverage,
-                            onClick = { onItemClick(movie.id, "movie") },
-                            aspectRatio = itemAspectRatio
-                        )
+                        MediaGridCardPlaceholder(aspectRatio = placeholderRatio)
                     }
                 }
+            }
+            refreshState is LoadState.Error && movies.itemCount == 0 -> {
+                val errorType = ErrorMessageResolver.resolve(refreshState.error)
+                val errorMessage = if (errorType is ErrorType.Generic && !errorType.customMessage.isNullOrBlank()) {
+                    errorType.customMessage
+                } else {
+                    stringResource(errorType.messageRes)
+                }
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    ErrorScreen(
+                        title = stringResource(errorType.titleRes),
+                        message = errorMessage,
+                        isNetworkError = errorType.isNetworkIssue,
+                        onRetry = { movies.retry() },
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+            }
+            movies.itemCount == 0 && refreshState is LoadState.NotLoading -> {
+                EmptyFeedView(
+                    onRefresh = { movies.refresh() },
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                )
+            }
+            else -> {
+                LazyVerticalStaggeredGrid(
+                    columns = StaggeredGridCells.Fixed(2),
+                    state = gridState,
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalItemSpacing = 16.dp,
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    items(
+                        count = movies.itemCount,
+                        key = movies.itemKey { it.id }
+                    ) { index ->
+                        val movie = movies[index]
+                        if (movie != null) {
+                            val itemAspectRatio = when (movie.id % 3) {
+                                0 -> 0.62f
+                                1 -> 0.72f
+                                else -> 2f / 3f
+                            }
+                            MediaGridCard(
+                                id = movie.id,
+                                title = movie.title,
+                                posterUrl = movie.posterUrl,
+                                releaseYear = movie.releaseYear,
+                                voteAverage = movie.voteAverage,
+                                onClick = { onItemClick(movie.id, "movie") },
+                                aspectRatio = itemAspectRatio
+                            )
+                        }
+                    }
 
-                // Append loading & error handlers spanning full width
-                when (val appendState = movies.loadState.append) {
-                    is LoadState.Loading -> {
-                        item(span = StaggeredGridItemSpan.FullLine) {
-                            PaginationLoadingItem()
+                    // Append loading & error handlers spanning full width
+                    when (val appendState = movies.loadState.append) {
+                        is LoadState.Loading -> {
+                            item(span = StaggeredGridItemSpan.FullLine) {
+                                PaginationLoadingItem()
+                            }
                         }
-                    }
-                    is LoadState.Error -> {
-                        item(span = StaggeredGridItemSpan.FullLine) {
-                            PaginationErrorItem(onRetry = { movies.retry() })
+                        is LoadState.Error -> {
+                            item(span = StaggeredGridItemSpan.FullLine) {
+                                PaginationErrorItem(onRetry = { movies.retry() })
+                            }
                         }
+                        is LoadState.NotLoading -> Unit
                     }
-                    is LoadState.NotLoading -> Unit
                 }
             }
         }
     }
 }
 
-/**
- * 2-column staggered grid rendering paginated TV series cards with skeleton shimmer and error handling.
- */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun TvSeriesFeedGrid(
     tvSeries: LazyPagingItems<TvSeries>,
@@ -297,93 +374,166 @@ private fun TvSeriesFeedGrid(
     onItemClick: (id: Int, mediaType: String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val refreshState = tvSeries.loadState.refresh
+    val isRefreshing = tvSeries.loadState.refresh is LoadState.Loading && tvSeries.itemCount > 0
 
-    when {
-        refreshState is LoadState.Loading && tvSeries.itemCount == 0 -> {
-            LazyVerticalStaggeredGrid(
-                columns = StaggeredGridCells.Fixed(2),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalItemSpacing = 16.dp,
-                modifier = modifier.fillMaxSize()
-            ) {
-                items(count = 5) { index ->
-                    val placeholderRatio = when (index % 3) {
-                        0 -> 0.62f
-                        1 -> 0.72f
-                        else -> 2f / 3f
+    PullToRefreshBox(
+        isRefreshing = isRefreshing,
+        onRefresh = { tvSeries.refresh() },
+        modifier = modifier.fillMaxSize()
+    ) {
+        val refreshState = tvSeries.loadState.refresh
+
+        when {
+            refreshState is LoadState.Loading && tvSeries.itemCount == 0 -> {
+                LazyVerticalStaggeredGrid(
+                    columns = StaggeredGridCells.Fixed(2),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalItemSpacing = 16.dp,
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    items(count = 5) { index ->
+                        val placeholderRatio = when (index % 3) {
+                            0 -> 0.62f
+                            1 -> 0.72f
+                            else -> 2f / 3f
+                        }
+                        MediaGridCardPlaceholder(aspectRatio = placeholderRatio)
                     }
-                    MediaGridCardPlaceholder(aspectRatio = placeholderRatio)
+                }
+            }
+            refreshState is LoadState.Error && tvSeries.itemCount == 0 -> {
+                val errorType = ErrorMessageResolver.resolve(refreshState.error)
+                val errorMessage = if (errorType is ErrorType.Generic && !errorType.customMessage.isNullOrBlank()) {
+                    errorType.customMessage
+                } else {
+                    stringResource(errorType.messageRes)
+                }
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    ErrorScreen(
+                        title = stringResource(errorType.titleRes),
+                        message = errorMessage,
+                        isNetworkError = errorType.isNetworkIssue,
+                        onRetry = { tvSeries.retry() },
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+            }
+            tvSeries.itemCount == 0 && refreshState is LoadState.NotLoading -> {
+                EmptyFeedView(
+                    onRefresh = { tvSeries.refresh() },
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                )
+            }
+            else -> {
+                LazyVerticalStaggeredGrid(
+                    columns = StaggeredGridCells.Fixed(2),
+                    state = gridState,
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalItemSpacing = 16.dp,
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    items(
+                        count = tvSeries.itemCount,
+                        key = tvSeries.itemKey { it.id }
+                    ) { index ->
+                        val series = tvSeries[index]
+                        if (series != null) {
+                            val itemAspectRatio = when (series.id % 3) {
+                                0 -> 0.62f
+                                1 -> 0.72f
+                                else -> 2f / 3f
+                            }
+                            MediaGridCard(
+                                id = series.id,
+                                title = series.name,
+                                posterUrl = series.posterUrl,
+                                releaseYear = series.firstAirYear,
+                                voteAverage = series.voteAverage,
+                                onClick = { onItemClick(series.id, "tv") },
+                                aspectRatio = itemAspectRatio
+                            )
+                        }
+                    }
+
+                    // Append loading & error handlers spanning full width
+                    when (val appendState = tvSeries.loadState.append) {
+                        is LoadState.Loading -> {
+                            item(span = StaggeredGridItemSpan.FullLine) {
+                                PaginationLoadingItem()
+                            }
+                        }
+                        is LoadState.Error -> {
+                            item(span = StaggeredGridItemSpan.FullLine) {
+                                PaginationErrorItem(onRetry = { tvSeries.retry() })
+                            }
+                        }
+                        is LoadState.NotLoading -> Unit
+                    }
                 }
             }
         }
-        refreshState is LoadState.Error && tvSeries.itemCount == 0 -> {
-            val errorType = ErrorMessageResolver.resolve(refreshState.error)
-            val errorMessage = if (errorType is ErrorType.Generic && !errorType.customMessage.isNullOrBlank()) {
-                errorType.customMessage
-            } else {
-                stringResource(errorType.messageRes)
-            }
-            ErrorScreen(
-                title = stringResource(errorType.titleRes),
-                message = errorMessage,
-                isNetworkError = errorType.isNetworkIssue,
-                onRetry = { tvSeries.retry() },
-                modifier = modifier.fillMaxSize()
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun WatchlistFeedGrid(
+    items: List<MediaItem>,
+    isRefreshing: Boolean,
+    onRefresh: () -> Unit,
+    gridState: LazyStaggeredGridState,
+    onItemClick: (id: Int, mediaType: String) -> Unit,
+    onExploreClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    PullToRefreshBox(
+        isRefreshing = isRefreshing,
+        onRefresh = onRefresh,
+        modifier = modifier.fillMaxSize()
+    ) {
+        if (items.isEmpty()) {
+            EmptyWatchlistView(
+                onExploreClick = onExploreClick,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
             )
-        }
-        tvSeries.itemCount == 0 && refreshState is LoadState.NotLoading -> {
-            EmptyFeedView(
-                onRefresh = { tvSeries.refresh() },
-                modifier = modifier.fillMaxSize()
-            )
-        }
-        else -> {
+        } else {
             LazyVerticalStaggeredGrid(
                 columns = StaggeredGridCells.Fixed(2),
                 state = gridState,
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalItemSpacing = 16.dp,
-                modifier = modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize()
             ) {
                 items(
-                    count = tvSeries.itemCount,
-                    key = tvSeries.itemKey { it.id }
+                    count = items.size,
+                    key = { index -> "${items[index].id}_${items[index].mediaType}" }
                 ) { index ->
-                    val series = tvSeries[index]
-                    if (series != null) {
-                        val itemAspectRatio = when (series.id % 3) {
-                            0 -> 0.62f
-                            1 -> 0.72f
-                            else -> 2f / 3f
-                        }
-                        MediaGridCard(
-                            id = series.id,
-                            title = series.name,
-                            posterUrl = series.posterUrl,
-                            releaseYear = series.firstAirYear,
-                            voteAverage = series.voteAverage,
-                            onClick = { onItemClick(series.id, "tv") },
-                            aspectRatio = itemAspectRatio
-                        )
+                    val item = items[index]
+                    val itemAspectRatio = when (index % 3) {
+                        0 -> 0.62f
+                        1 -> 0.72f
+                        else -> 2f / 3f
                     }
-                }
-
-                // Append loading & error handlers spanning full width
-                when (val appendState = tvSeries.loadState.append) {
-                    is LoadState.Loading -> {
-                        item(span = StaggeredGridItemSpan.FullLine) {
-                            PaginationLoadingItem()
-                        }
-                    }
-                    is LoadState.Error -> {
-                        item(span = StaggeredGridItemSpan.FullLine) {
-                            PaginationErrorItem(onRetry = { tvSeries.retry() })
-                        }
-                    }
-                    is LoadState.NotLoading -> Unit
+                    MediaGridCard(
+                        id = item.id,
+                        title = item.title,
+                        posterUrl = item.posterUrl,
+                        releaseYear = item.releaseYear,
+                        voteAverage = item.voteAverage,
+                        aspectRatio = itemAspectRatio,
+                        onClick = { onItemClick(item.id, item.mediaType.lowercase()) }
+                    )
                 }
             }
         }
@@ -579,25 +729,50 @@ private fun MainScreenEmptyFeedLightPreview() {
     }
 }
 
-@Preview(name = "MainScreen - Empty Feed Dark", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Preview(name = "MainScreen - Watchlist Tab Dark", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
-private fun MainScreenEmptyFeedDarkPreview() {
-    val emptyStates = LoadStates(
-        refresh = LoadState.NotLoading(endOfPaginationReached = true),
-        prepend = LoadState.NotLoading(endOfPaginationReached = true),
-        append = LoadState.NotLoading(endOfPaginationReached = true)
+private fun MainScreenWatchlistTabDarkPreview() {
+    val sampleWatchlistItems = listOf(
+        MediaItem(
+            id = 1,
+            mediaType = "MOVIE",
+            title = "The Beekeeper",
+            posterUrl = null,
+            backdropUrl = null,
+            releaseDate = "2024-01-12",
+            releaseYear = "2024",
+            voteAverage = 7.4,
+            overview = "One man's campaign for vengeance takes on national stakes."
+        ),
+        MediaItem(
+            id = 2,
+            mediaType = "TV",
+            title = "Stranger Things",
+            posterUrl = null,
+            backdropUrl = null,
+            releaseDate = "2016-07-15",
+            releaseYear = "2016",
+            voteAverage = 8.6,
+            overview = "When a young boy vanishes, a small town uncovers a mystery."
+        )
     )
+
     GolekPilemTheme(darkTheme = true) {
         Surface {
             MainScreen(
-                uiState = MainUiState(selectedTabIndex = 0),
-                movies = flowOf(PagingData.empty<Movie>(sourceLoadStates = emptyStates)).collectAsLazyPagingItems(),
-                tvSeries = flowOf(PagingData.empty<TvSeries>(sourceLoadStates = emptyStates)).collectAsLazyPagingItems(),
+                uiState = MainUiState(
+                    selectedTabIndex = 2,
+                    watchlistItems = sampleWatchlistItems,
+                    watchlistCount = 2
+                ),
+                movies = flowOf(PagingData.empty<Movie>()).collectAsLazyPagingItems(),
+                tvSeries = flowOf(PagingData.empty<TvSeries>()).collectAsLazyPagingItems(),
                 onEvent = {},
                 onItemClick = { _, _ -> }
             )
         }
     }
 }
+
 
 
