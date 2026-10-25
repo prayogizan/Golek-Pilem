@@ -40,4 +40,15 @@ interface RemoteKeyDao {
      */
     @Query("DELETE FROM remote_keys WHERE mediaType = :mediaType")
     suspend fun clearKeys(mediaType: String): Int
+
+    /**
+     * Purges pagination cursor records that were last updated earlier than the specified [cutoffTimestamp],
+     * strictly exempting any entries that are currently bookmarked in the user's watchlist.
+     *
+     * @param cutoffTimestamp The cutoff epoch millisecond timestamp for pruning old cursor keys.
+     * @return The number of pruned pagination cursor records.
+     */
+    @Query("DELETE FROM remote_keys WHERE lastUpdated < :cutoffTimestamp AND NOT EXISTS (SELECT 1 FROM watchlist WHERE watchlist.id = remote_keys.id AND watchlist.mediaType = remote_keys.mediaType)")
+    suspend fun purgeExpiredKeysExceptWatchlist(cutoffTimestamp: Long): Int
 }
+

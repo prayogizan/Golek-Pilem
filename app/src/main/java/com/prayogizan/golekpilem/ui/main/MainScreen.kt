@@ -12,10 +12,14 @@ import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Storage
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Scaffold
@@ -74,6 +78,7 @@ import kotlin.math.roundToInt
  * @param tvSeries Paginated collection of popular TV series.
  * @param onEvent Callback dispatching user events ([MainUiEvent]) to the ViewModel.
  * @param onItemClick Callback triggered when the user taps a movie or series card.
+ * @param onStorageClick Callback triggered when the storage diagnostics action button is tapped.
  * @param modifier Optional modifier applied to the root [Scaffold].
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -84,6 +89,7 @@ fun MainScreen(
     tvSeries: LazyPagingItems<TvSeries>,
     onEvent: (MainUiEvent) -> Unit,
     onItemClick: (id: Int, mediaType: String) -> Unit,
+    onStorageClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     // Preserve independent scroll states across tab selections
@@ -125,10 +131,20 @@ fun MainScreen(
                                 style = MaterialTheme.typography.titleLarge
                             )
                         },
+                        actions = {
+                            IconButton(onClick = onStorageClick) {
+                                Icon(
+                                    imageVector = Icons.Outlined.Storage,
+                                    contentDescription = stringResource(R.string.cd_storage_diagnostics),
+                                    tint = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        },
                         colors = TopAppBarDefaults.topAppBarColors(
                             containerColor = MaterialTheme.colorScheme.surface
                         )
                     )
+
 
                     // Triple Tab Row (Movies, TV Series & Watchlist)
                     PrimaryTabRow(

@@ -51,6 +51,17 @@ interface MediaDao {
     suspend fun purgeOlderThan(timestamp: Long): Int
 
     /**
+     * Purges cached catalog items that were recorded earlier than the specified [cutoffTimestamp],
+     * strictly exempting any entries that are currently bookmarked in the user's watchlist.
+     *
+     * @param cutoffTimestamp The cutoff epoch millisecond timestamp for pruning old entries.
+     * @return The number of pruned catalog records.
+     */
+    @Query("DELETE FROM media_catalog WHERE cachedAt < :cutoffTimestamp AND NOT EXISTS (SELECT 1 FROM watchlist WHERE watchlist.id = media_catalog.id AND watchlist.mediaType = media_catalog.mediaType)")
+    suspend fun purgeExpiredCatalogExceptWatchlist(cutoffTimestamp: Long): Int
+
+
+    /**
      * Returns the total count of cached media items for the given [mediaType].
      *
      * @param mediaType The media classification identifier ("MOVIE" or "TV").
