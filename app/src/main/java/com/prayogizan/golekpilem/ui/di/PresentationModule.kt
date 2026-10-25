@@ -16,7 +16,9 @@ val presentationModule = module {
     viewModel {
         MainViewModel(
             getMoviesUseCase = get(),
-            getTvSeriesUseCase = get()
+            getTvSeriesUseCase = get(),
+            getWatchlistUseCase = get(),
+            getWatchlistCountUseCase = get()
         )
     }
 
@@ -24,7 +26,9 @@ val presentationModule = module {
         DetailViewModel(
             savedStateHandle = it.getOrNull() ?: SavedStateHandle(),
             getMovieDetailUseCase = get(),
-            getTvSeriesDetailUseCase = get()
+            getTvSeriesDetailUseCase = get(),
+            isWatchlistedUseCase = get(),
+            toggleWatchlistUseCase = get()
         )
     }
 }

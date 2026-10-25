@@ -57,6 +57,9 @@ class AppModuleTest : KoinTest {
         val tvRepository: TvRepository = get()
         assertNotNull("TvRepository should be resolved via dataModule", tvRepository)
 
+        val watchlistRepository: com.prayogizan.golekpilem.domain.repository.WatchlistRepository = get()
+        assertNotNull("WatchlistRepository should be resolved via dataModule", watchlistRepository)
+
         val getMoviesUseCase: GetMoviesUseCase = get()
         assertNotNull("GetMoviesUseCase should be resolved via domainModule", getMoviesUseCase)
 
@@ -68,6 +71,18 @@ class AppModuleTest : KoinTest {
 
         val getTvSeriesDetailUseCase: GetTvSeriesDetailUseCase = get()
         assertNotNull("GetTvSeriesDetailUseCase should be resolved via domainModule", getTvSeriesDetailUseCase)
+
+        val getWatchlistUseCase: com.prayogizan.golekpilem.domain.usecase.GetWatchlistUseCase = get()
+        assertNotNull("GetWatchlistUseCase should be resolved via domainModule", getWatchlistUseCase)
+
+        val isWatchlistedUseCase: com.prayogizan.golekpilem.domain.usecase.IsWatchlistedUseCase = get()
+        assertNotNull("IsWatchlistedUseCase should be resolved via domainModule", isWatchlistedUseCase)
+
+        val toggleWatchlistUseCase: com.prayogizan.golekpilem.domain.usecase.ToggleWatchlistUseCase = get()
+        assertNotNull("ToggleWatchlistUseCase should be resolved via domainModule", toggleWatchlistUseCase)
+
+        val getWatchlistCountUseCase: com.prayogizan.golekpilem.domain.usecase.GetWatchlistCountUseCase = get()
+        assertNotNull("GetWatchlistCountUseCase should be resolved via domainModule", getWatchlistCountUseCase)
 
         val mainViewModel: MainViewModel = get()
         assertNotNull("MainViewModel should be resolved via presentationModule", mainViewModel)

@@ -12,6 +12,8 @@ import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -44,10 +46,12 @@ import com.prayogizan.golekpilem.R
 import kotlinx.coroutines.flow.flowOf
 import com.prayogizan.golekpilem.core.util.ErrorMessageResolver
 import com.prayogizan.golekpilem.core.util.ErrorType
+import com.prayogizan.golekpilem.domain.model.MediaItem
 import com.prayogizan.golekpilem.domain.model.Movie
 import com.prayogizan.golekpilem.domain.model.TvSeries
 import com.prayogizan.golekpilem.ui.common.ErrorScreen
 import com.prayogizan.golekpilem.ui.main.components.EmptyFeedView
+import com.prayogizan.golekpilem.ui.main.components.EmptyWatchlistView
 import com.prayogizan.golekpilem.ui.main.components.MediaGridCard
 import com.prayogizan.golekpilem.ui.main.components.MediaGridCardPlaceholder
 import com.prayogizan.golekpilem.ui.main.components.PaginationErrorItem
@@ -85,6 +89,7 @@ fun MainScreen(
     // Preserve independent scroll states across tab selections
     val moviesGridState = rememberSaveable(saver = LazyStaggeredGridState.Saver) { LazyStaggeredGridState() }
     val tvSeriesGridState = rememberSaveable(saver = LazyStaggeredGridState.Saver) { LazyStaggeredGridState() }
+    val watchlistGridState = rememberSaveable(saver = LazyStaggeredGridState.Saver) { LazyStaggeredGridState() }
 
     // Scroll behavior that collapses header on scroll down and reveals it immediately on scroll up
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
@@ -125,13 +130,14 @@ fun MainScreen(
                         )
                     )
 
-                    // Dual Tab Row (Movies & TV Series)
+                    // Triple Tab Row (Movies, TV Series & Watchlist)
                     PrimaryTabRow(
                         selectedTabIndex = uiState.selectedTabIndex,
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         val moviesCd = stringResource(R.string.cd_movie_tab)
                         val tvCd = stringResource(R.string.cd_tv_tab)
+                        val watchlistCd = stringResource(R.string.cd_watchlist_tab)
 
                         Tab(
                             selected = uiState.selectedTabIndex == 0,
@@ -156,6 +162,33 @@ fun MainScreen(
                             },
                             modifier = Modifier.semantics { contentDescription = tvCd }
                         )
+
+                        Tab(
+                            selected = uiState.selectedTabIndex == 2,
+                            onClick = { onEvent(MainUiEvent.SelectTab(2)) },
+                            text = {
+                                BadgedBox(
+                                    badge = {
+                                        if (uiState.watchlistCount > 0) {
+                                            Badge(
+                                                containerColor = MaterialTheme.colorScheme.primary,
+                                                contentColor = MaterialTheme.colorScheme.onPrimary
+                                            ) {
+                                                Text(
+                                                    text = if (uiState.watchlistCount > 99) "99+" else uiState.watchlistCount.toString()
+                                                )
+                                            }
+                                        }
+                                    }
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.tab_watchlist),
+                                        fontWeight = if (uiState.selectedTabIndex == 2) FontWeight.Bold else FontWeight.Medium
+                                    )
+                                }
+                            },
+                            modifier = Modifier.semantics { contentDescription = watchlistCd }
+                        )
                     }
                 }
             }
@@ -167,18 +200,29 @@ fun MainScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            if (uiState.selectedTabIndex == 0) {
-                MovieFeedGrid(
-                    movies = movies,
-                    gridState = moviesGridState,
-                    onItemClick = onItemClick
-                )
-            } else {
-                TvSeriesFeedGrid(
-                    tvSeries = tvSeries,
-                    gridState = tvSeriesGridState,
-                    onItemClick = onItemClick
-                )
+            when (uiState.selectedTabIndex) {
+                0 -> {
+                    MovieFeedGrid(
+                        movies = movies,
+                        gridState = moviesGridState,
+                        onItemClick = onItemClick
+                    )
+                }
+                1 -> {
+                    TvSeriesFeedGrid(
+                        tvSeries = tvSeries,
+                        gridState = tvSeriesGridState,
+                        onItemClick = onItemClick
+                    )
+                }
+                2 -> {
+                    WatchlistFeedGrid(
+                        items = uiState.watchlistItems,
+                        gridState = watchlistGridState,
+                        onItemClick = onItemClick,
+                        onExploreClick = { onEvent(MainUiEvent.SelectTab(0)) }
+                    )
+                }
             }
         }
     }
@@ -390,6 +434,55 @@ private fun TvSeriesFeedGrid(
     }
 }
 
+/**
+ * 2-column staggered grid rendering saved watchlist media cards with empty state handling.
+ */
+@Composable
+private fun WatchlistFeedGrid(
+    items: List<MediaItem>,
+    gridState: LazyStaggeredGridState,
+    onItemClick: (id: Int, mediaType: String) -> Unit,
+    onExploreClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    if (items.isEmpty()) {
+        EmptyWatchlistView(
+            onExploreClick = onExploreClick,
+            modifier = modifier.fillMaxSize()
+        )
+    } else {
+        LazyVerticalStaggeredGrid(
+            columns = StaggeredGridCells.Fixed(2),
+            state = gridState,
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalItemSpacing = 16.dp,
+            modifier = modifier.fillMaxSize()
+        ) {
+            items(
+                count = items.size,
+                key = { index -> "${items[index].id}_${items[index].mediaType}" }
+            ) { index ->
+                val item = items[index]
+                val itemAspectRatio = when (index % 3) {
+                    0 -> 0.62f
+                    1 -> 0.72f
+                    else -> 2f / 3f
+                }
+                MediaGridCard(
+                    id = item.id,
+                    title = item.title,
+                    posterUrl = item.posterUrl,
+                    releaseYear = item.releaseYear,
+                    voteAverage = item.voteAverage,
+                    aspectRatio = itemAspectRatio,
+                    onClick = { onItemClick(item.id, item.mediaType.lowercase()) }
+                )
+            }
+        }
+    }
+}
+
 // =============================================================================
 // Comprehensive Compose Previews
 // =============================================================================
@@ -579,25 +672,50 @@ private fun MainScreenEmptyFeedLightPreview() {
     }
 }
 
-@Preview(name = "MainScreen - Empty Feed Dark", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Preview(name = "MainScreen - Watchlist Tab Dark", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
-private fun MainScreenEmptyFeedDarkPreview() {
-    val emptyStates = LoadStates(
-        refresh = LoadState.NotLoading(endOfPaginationReached = true),
-        prepend = LoadState.NotLoading(endOfPaginationReached = true),
-        append = LoadState.NotLoading(endOfPaginationReached = true)
+private fun MainScreenWatchlistTabDarkPreview() {
+    val sampleWatchlistItems = listOf(
+        MediaItem(
+            id = 1,
+            mediaType = "MOVIE",
+            title = "The Beekeeper",
+            posterUrl = null,
+            backdropUrl = null,
+            releaseDate = "2024-01-12",
+            releaseYear = "2024",
+            voteAverage = 7.4,
+            overview = "One man's campaign for vengeance takes on national stakes."
+        ),
+        MediaItem(
+            id = 2,
+            mediaType = "TV",
+            title = "Stranger Things",
+            posterUrl = null,
+            backdropUrl = null,
+            releaseDate = "2016-07-15",
+            releaseYear = "2016",
+            voteAverage = 8.6,
+            overview = "When a young boy vanishes, a small town uncovers a mystery."
+        )
     )
+
     GolekPilemTheme(darkTheme = true) {
         Surface {
             MainScreen(
-                uiState = MainUiState(selectedTabIndex = 0),
-                movies = flowOf(PagingData.empty<Movie>(sourceLoadStates = emptyStates)).collectAsLazyPagingItems(),
-                tvSeries = flowOf(PagingData.empty<TvSeries>(sourceLoadStates = emptyStates)).collectAsLazyPagingItems(),
+                uiState = MainUiState(
+                    selectedTabIndex = 2,
+                    watchlistItems = sampleWatchlistItems,
+                    watchlistCount = 2
+                ),
+                movies = flowOf(PagingData.empty<Movie>()).collectAsLazyPagingItems(),
+                tvSeries = flowOf(PagingData.empty<TvSeries>()).collectAsLazyPagingItems(),
                 onEvent = {},
                 onItemClick = { _, _ -> }
             )
         }
     }
 }
+
 
 

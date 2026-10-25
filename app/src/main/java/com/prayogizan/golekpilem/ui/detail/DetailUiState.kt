@@ -20,7 +20,9 @@ sealed interface DetailUiState {
      * @property isOfflineCache Indicates whether this record is served from offline Room storage.
      */
     data class MovieSuccess(
-        val detail: MovieDetail
+        val detail: MovieDetail,
+        val isWatchlisted: Boolean = false,
+        val userMessageRes: Int? = null
     ) : DetailUiState {
         val isOfflineCache: Boolean get() = detail.isOfflineCache
     }
@@ -29,10 +31,14 @@ sealed interface DetailUiState {
      * Successfully loaded detailed metadata for a television series entity.
      *
      * @property detail The comprehensive domain [TvSeriesDetail] model.
+     * @property isWatchlisted Indicates whether this TV series is present in the user's watchlist.
+     * @property userMessageRes Optional string resource ID for transient snackbar notifications.
      * @property isOfflineCache Indicates whether this record is served from offline Room storage.
      */
     data class TvSuccess(
-        val detail: TvSeriesDetail
+        val detail: TvSeriesDetail,
+        val isWatchlisted: Boolean = false,
+        val userMessageRes: Int? = null
     ) : DetailUiState {
         val isOfflineCache: Boolean get() = detail.isOfflineCache
     }

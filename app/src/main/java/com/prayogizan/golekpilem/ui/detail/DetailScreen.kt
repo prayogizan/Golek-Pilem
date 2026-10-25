@@ -5,6 +5,7 @@ import android.content.Intent
 import android.content.res.Configuration
 import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -18,6 +19,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -27,16 +29,21 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.CloudOff
+import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -120,6 +127,22 @@ fun DetailScreen(
         }
     }
 
+    val snackbarHostState = remember { SnackbarHostState() }
+    val userMessageRes = when (uiState) {
+        is DetailUiState.MovieSuccess -> uiState.userMessageRes
+        is DetailUiState.TvSuccess -> uiState.userMessageRes
+        else -> null
+    }
+
+    val userMessage = userMessageRes?.let { stringResource(it) }
+
+    LaunchedEffect(userMessage) {
+        userMessage?.let { message ->
+            snackbarHostState.showSnackbar(message = message)
+            onEvent(DetailUiEvent.ClearUserMessage)
+        }
+    }
+
     // Scroll behavior that collapses back button on scroll down and reveals it immediately on scroll up
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
@@ -184,8 +207,14 @@ fun DetailScreen(
             }
         }
 
-        // Floating Enter-Always Back Navigation Bar
+        // Floating Enter-Always Back Navigation Bar & Watchlist Action
         if (uiState is DetailUiState.MovieSuccess || uiState is DetailUiState.TvSuccess) {
+            val isWatchlisted = when (uiState) {
+                is DetailUiState.MovieSuccess -> uiState.isWatchlisted
+                is DetailUiState.TvSuccess -> uiState.isWatchlisted
+                else -> false
+            }
+
             TopAppBar(
                 title = { },
                 navigationIcon = {
@@ -204,6 +233,37 @@ fun DetailScreen(
                             contentDescription = stringResource(R.string.cd_back_button),
                             tint = MaterialTheme.colorScheme.onSurface
                         )
+                    }
+                },
+                actions = {
+                    IconButton(
+                        onClick = { onEvent(DetailUiEvent.ToggleWatchlist) },
+                        modifier = Modifier
+                            .padding(end = 12.dp)
+                            .size(48.dp)
+                            .background(
+                                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+                                shape = CircleShape
+                            )
+                    ) {
+                        Crossfade(
+                            targetState = isWatchlisted,
+                            label = "WatchlistBookmarkAnimation"
+                        ) { isSaved ->
+                            if (isSaved) {
+                                Icon(
+                                    imageVector = Icons.Filled.Bookmark,
+                                    contentDescription = stringResource(R.string.cd_remove_from_watchlist),
+                                    tint = Color(0xFFE50914)
+                                )
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Outlined.BookmarkBorder,
+                                    contentDescription = stringResource(R.string.cd_add_to_watchlist),
+                                    tint = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -265,6 +325,14 @@ fun DetailScreen(
                 onNavigateToOfficial = handleNavigateToOfficial
             )
         }
+
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
+                .padding(16.dp)
+        )
     }
 }
 
