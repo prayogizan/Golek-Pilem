@@ -28,7 +28,8 @@ interface TvRepository {
      * or [Resource.Error] with sanitized error messages on failure.
      *
      * @param seriesId The unique TMDB identifier of the target television series.
+     * @param forceRefresh Whether to bypass valid local cache and force remote TMDB retrieval.
      * @return A cold [Flow] emitting the retrieval lifecycle state encapsulated within [Resource].
      */
-    fun getTvSeriesDetail(seriesId: Int): Flow<Resource<TvSeriesDetail>>
+    fun getTvSeriesDetail(seriesId: Int, forceRefresh: Boolean = false): Flow<Resource<TvSeriesDetail>>
 }

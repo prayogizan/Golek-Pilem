@@ -20,6 +20,7 @@ package com.prayogizan.golekpilem.domain.model
  * @property status Current broadcast/production status (e.g. "Returning Series", "Ended").
  * @property reviews Collection of [Review] entities submitted for this series.
  * @property videos Collection of [Video] entities representing trailers and promotional clips.
+ * @property isOfflineCache Indicates whether this record is served from local Room storage rather than fresh network.
  */
 data class TvSeriesDetail(
     val id: Int,
@@ -38,7 +39,8 @@ data class TvSeriesDetail(
     val networks: List<Network>,
     val status: String,
     val reviews: List<Review> = emptyList(),
-    val videos: List<Video> = emptyList()
+    val videos: List<Video> = emptyList(),
+    val isOfflineCache: Boolean = false
 ) {
     /**
      * Resolves the primary official trailer, falling back to any available trailer or YouTube video.

@@ -15,6 +15,7 @@ class GetTvSeriesDetailUseCaseTest {
 
     private class FakeTvRepository : TvRepository {
         var requestedSeriesId: Int? = null
+        var requestedForceRefresh: Boolean? = null
         val expectedResourceFlow: Flow<Resource<TvSeriesDetail>> = flowOf(
             Resource.Success(
                 TvSeriesDetail(
@@ -39,14 +40,15 @@ class GetTvSeriesDetailUseCaseTest {
 
         override fun getTvSeries(): Flow<PagingData<TvSeries>> = emptyFlow()
 
-        override fun getTvSeriesDetail(seriesId: Int): Flow<Resource<TvSeriesDetail>> {
+        override fun getTvSeriesDetail(seriesId: Int, forceRefresh: Boolean): Flow<Resource<TvSeriesDetail>> {
             requestedSeriesId = seriesId
+            requestedForceRefresh = forceRefresh
             return expectedResourceFlow
         }
     }
 
     @Test
-    fun `invoke delegates execution directly to tvRepository getTvSeriesDetail with correct id`() {
+    fun `invoke delegates execution directly to tvRepository getTvSeriesDetail with correct id and default forceRefresh`() {
         val fakeRepository = FakeTvRepository()
         val useCase = GetTvSeriesDetailUseCase(fakeRepository)
 
@@ -54,5 +56,18 @@ class GetTvSeriesDetailUseCaseTest {
 
         assertEquals(fakeRepository.expectedResourceFlow, resultFlow)
         assertEquals(200, fakeRepository.requestedSeriesId)
+        assertEquals(false, fakeRepository.requestedForceRefresh)
+    }
+
+    @Test
+    fun `invoke delegates execution directly to tvRepository getTvSeriesDetail with explicit forceRefresh true`() {
+        val fakeRepository = FakeTvRepository()
+        val useCase = GetTvSeriesDetailUseCase(fakeRepository)
+
+        val resultFlow = useCase(seriesId = 200, forceRefresh = true)
+
+        assertEquals(fakeRepository.expectedResourceFlow, resultFlow)
+        assertEquals(200, fakeRepository.requestedSeriesId)
+        assertEquals(true, fakeRepository.requestedForceRefresh)
     }
 }

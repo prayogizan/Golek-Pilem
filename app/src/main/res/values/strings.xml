@@ -66,6 +66,8 @@
     <string name="cd_detail_poster">Poster artwork for %1$s</string>
     <string name="cd_company_logo">Logo for %1$s</string>
     <string name="cd_network_logo">Logo for %1$s</string>
+    <string name="detail_offline_cache_badge">Offline view — Showing cached details</string>
+    <string name="cd_offline_cached_badge">Offline cached details indicator</string>
 
     <!-- Reviews Section -->
     <string name="detail_reviews_title">Reviews</string>
@@ -85,4 +87,37 @@
     <string name="cd_fullscreen_trailer">Play trailer in fullscreen</string>
     <string name="cd_close_player">Close player</string>
     <string name="trailer_official_badge">Official</string>
+
+    <!-- Watchlist & Offline Favorites (Phase 6.1) -->
+    <string name="tab_watchlist">Watchlist</string>
+    <string name="cd_watchlist_tab">Watchlist tab</string>
+    <string name="cd_watchlist_badge">%1$d items in watchlist</string>
+    <string name="watchlist_empty_title">No saved titles yet</string>
+    <string name="watchlist_empty_message">Tap the bookmark icon on any movie or TV series to save it offline!</string>
+    <string name="watchlist_empty_action">Explore Catalog</string>
+    <string name="msg_added_to_watchlist">Added to Watchlist</string>
+    <string name="msg_removed_from_watchlist">Removed from Watchlist</string>
+    <string name="cd_add_to_watchlist">Add to watchlist</string>
+    <string name="cd_remove_from_watchlist">Remove from watchlist</string>
+    <string name="cd_empty_watchlist_illustration">Empty watchlist illustration</string>
+
+    <!-- Network Connectivity Banner (Phase 6.2) -->
+    <string name="network_offline_banner">You are offline. Showing cached content.</string>
+    <string name="network_online_banner">Back online. Syncing catalog…</string>
+    <string name="cd_network_offline">Network offline indicator</string>
+    <string name="cd_network_online">Network online indicator</string>
+
+    <!-- Storage Diagnostics & Cache Maintenance (Phase 6.3) -->
+    <string name="storage_dialog_title">Storage Diagnostics</string>
+    <string name="storage_database_size">Database Cache: %1$s</string>
+    <string name="storage_image_cache_size">Image Disk Cache: %1$s</string>
+    <string name="storage_total_size">Total App Storage: %1$s</string>
+    <string name="storage_clear_images_button">Clear Image Cache</string>
+    <string name="storage_purge_catalog_button">Free Stale Storage</string>
+    <string name="storage_purge_catalog_description">Prunes feed items older than 7 days while safely preserving your Watchlist.</string>
+    <string name="storage_clear_images_success">Image cache cleared successfully</string>
+    <string name="storage_purge_catalog_success">Purged %1$d stale catalog items (Watchlist preserved)</string>
+    <string name="storage_close_button">Close</string>
+    <string name="cd_storage_diagnostics">Storage diagnostics</string>
+    <string name="cd_storage_icon">Storage diagnostics icon</string>
 </resources>

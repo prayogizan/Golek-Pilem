@@ -23,7 +23,7 @@ class GetMoviesUseCaseTest {
             return pagingDataFlow
         }
 
-        override fun getMovieDetail(movieId: Int): Flow<Resource<MovieDetail>> {
+        override fun getMovieDetail(movieId: Int, forceRefresh: Boolean): Flow<Resource<MovieDetail>> {
             return emptyFlow()
         }
     }

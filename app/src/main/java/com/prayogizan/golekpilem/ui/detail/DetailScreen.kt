@@ -4,28 +4,49 @@ import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.content.res.Configuration
 import android.net.Uri
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.CloudOff
+import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -109,10 +130,45 @@ fun DetailScreen(
         }
     }
 
+    val snackbarHostState = remember { SnackbarHostState() }
+    val userMessageRes = when (uiState) {
+        is DetailUiState.MovieSuccess -> uiState.userMessageRes
+        is DetailUiState.TvSuccess -> uiState.userMessageRes
+        else -> null
+    }
+
+    val userMessage = userMessageRes?.let { stringResource(it) }
+
+    LaunchedEffect(userMessage) {
+        userMessage?.let { message ->
+            snackbarHostState.showSnackbar(message = message)
+            onEvent(DetailUiEvent.ClearUserMessage)
+        }
+    }
+
     // Scroll behavior that collapses back button on scroll down and reveals it immediately on scroll up
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
-    Box(
+    val isRefreshing = when (uiState) {
+        is DetailUiState.MovieSuccess -> uiState.isRefreshing
+        is DetailUiState.TvSuccess -> uiState.isRefreshing
+        else -> false
+    }
+    val pullToRefreshState = rememberPullToRefreshState()
+
+    PullToRefreshBox(
+        isRefreshing = isRefreshing,
+        onRefresh = { onEvent(DetailUiEvent.Refresh) },
+        state = pullToRefreshState,
+        indicator = {
+            PullToRefreshDefaults.Indicator(
+                state = pullToRefreshState,
+                isRefreshing = isRefreshing,
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .statusBarsPadding()
+            )
+        },
         modifier = modifier
             .fillMaxSize()
             .nestedScroll(scrollBehavior.nestedScrollConnection)
@@ -125,7 +181,11 @@ fun DetailScreen(
                 )
             }
             is DetailUiState.Error -> {
-                Box(modifier = Modifier.fillMaxSize()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                ) {
                     val resolvedTitle = uiState.titleRes?.let { stringResource(it) }
                         ?: stringResource(R.string.error_default_title)
                     val resolvedMessage = uiState.messageRes?.let { stringResource(it) }
@@ -173,8 +233,14 @@ fun DetailScreen(
             }
         }
 
-        // Floating Enter-Always Back Navigation Bar
+        // Floating Enter-Always Back Navigation Bar & Watchlist Action
         if (uiState is DetailUiState.MovieSuccess || uiState is DetailUiState.TvSuccess) {
+            val isWatchlisted = when (uiState) {
+                is DetailUiState.MovieSuccess -> uiState.isWatchlisted
+                is DetailUiState.TvSuccess -> uiState.isWatchlisted
+                else -> false
+            }
+
             TopAppBar(
                 title = { },
                 navigationIcon = {
@@ -195,6 +261,37 @@ fun DetailScreen(
                         )
                     }
                 },
+                actions = {
+                    IconButton(
+                        onClick = { onEvent(DetailUiEvent.ToggleWatchlist) },
+                        modifier = Modifier
+                            .padding(end = 12.dp)
+                            .size(48.dp)
+                            .background(
+                                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+                                shape = CircleShape
+                            )
+                    ) {
+                        Crossfade(
+                            targetState = isWatchlisted,
+                            label = "WatchlistBookmarkAnimation"
+                        ) { isSaved ->
+                            if (isSaved) {
+                                Icon(
+                                    imageVector = Icons.Filled.Bookmark,
+                                    contentDescription = stringResource(R.string.cd_remove_from_watchlist),
+                                    tint = Color(0xFFE50914)
+                                )
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Outlined.BookmarkBorder,
+                                    contentDescription = stringResource(R.string.cd_add_to_watchlist),
+                                    tint = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.Transparent,
                     scrolledContainerColor = Color.Transparent
@@ -202,6 +299,48 @@ fun DetailScreen(
                 scrollBehavior = scrollBehavior,
                 modifier = Modifier.align(Alignment.TopCenter)
             )
+
+            val isOfflineCache = when (uiState) {
+                is DetailUiState.MovieSuccess -> uiState.isOfflineCache
+                is DetailUiState.TvSuccess -> uiState.isOfflineCache
+                else -> false
+            }
+
+            AnimatedVisibility(
+                visible = isOfflineCache,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically(),
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .statusBarsPadding()
+                    .padding(top = 64.dp)
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.94f),
+                    tonalElevation = 4.dp,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)),
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CloudOff,
+                            contentDescription = stringResource(R.string.cd_offline_cached_badge),
+                            modifier = Modifier.size(16.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            text = stringResource(R.string.detail_offline_cache_badge),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
         }
 
         // Fullscreen In-App Landscape Player Overlay
@@ -212,6 +351,14 @@ fun DetailScreen(
                 onNavigateToOfficial = handleNavigateToOfficial
             )
         }
+
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
+                .padding(16.dp)
+        )
     }
 }
 
@@ -537,6 +684,20 @@ private fun DetailScreenErrorLightPreview() {
         Surface {
             DetailScreen(
                 uiState = DetailUiState.Error("Network connection lost. Please check connection."),
+                onEvent = {},
+                onBackClick = {}
+            )
+        }
+    }
+}
+
+@Preview(name = "DetailScreen Movie Offline Cached - Dark Theme", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun DetailScreenMovieOfflineDarkPreview() {
+    GolekPilemTheme(darkTheme = true) {
+        Surface {
+            DetailScreen(
+                uiState = DetailUiState.MovieSuccess(sampleMovieDetail.copy(isOfflineCache = true)),
                 onEvent = {},
                 onBackClick = {}
             )
