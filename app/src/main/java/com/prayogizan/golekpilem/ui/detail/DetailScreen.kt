@@ -17,11 +17,14 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -30,6 +33,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -63,6 +68,8 @@ import com.prayogizan.golekpilem.ui.theme.GolekPilemTheme
  *
  * Renders an immersive hero backdrop, overlapping poster card, title and info row,
  * interactive genre chips, storyline overview, trailers/videos, and production credits.
+ * Employs [TopAppBarDefaults.enterAlwaysScrollBehavior] to smoothly collapse the floating
+ * back navigation button on downward scroll and immediately reveal it on upward scroll.
  *
  * @param uiState Current immutable UI state representing loading, content, or error.
  * @param onEvent Lambda callback for dispatching user actions ([DetailUiEvent]) to the ViewModel.
@@ -70,6 +77,7 @@ import com.prayogizan.golekpilem.ui.theme.GolekPilemTheme
  * @param modifier Optional modifier applied to the screen root container.
  * @param onVideoClick Optional lambda callback invoked when navigating externally to the official video. Defaults to YouTube intent.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DetailScreen(
     uiState: DetailUiState,
@@ -101,7 +109,14 @@ fun DetailScreen(
         }
     }
 
-    Box(modifier = modifier.fillMaxSize()) {
+    // Scroll behavior that collapses back button on scroll down and reveals it immediately on scroll up
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .nestedScroll(scrollBehavior.nestedScrollConnection)
+    ) {
         when (uiState) {
             is DetailUiState.Loading -> {
                 DetailShimmerScreen(
@@ -143,7 +158,6 @@ fun DetailScreen(
             is DetailUiState.MovieSuccess -> {
                 MovieDetailContent(
                     detail = uiState.detail,
-                    onBackClick = onBackClick,
                     onPlayInApp = { activeVideoId = it.id },
                     onNavigateToOfficial = handleNavigateToOfficial,
                     modifier = Modifier.fillMaxSize()
@@ -152,12 +166,42 @@ fun DetailScreen(
             is DetailUiState.TvSuccess -> {
                 TvSeriesDetailContent(
                     detail = uiState.detail,
-                    onBackClick = onBackClick,
                     onPlayInApp = { activeVideoId = it.id },
                     onNavigateToOfficial = handleNavigateToOfficial,
                     modifier = Modifier.fillMaxSize()
                 )
             }
+        }
+
+        // Floating Enter-Always Back Navigation Bar
+        if (uiState is DetailUiState.MovieSuccess || uiState is DetailUiState.TvSuccess) {
+            TopAppBar(
+                title = { },
+                navigationIcon = {
+                    IconButton(
+                        onClick = onBackClick,
+                        modifier = Modifier
+                            .padding(start = 12.dp)
+                            .size(48.dp)
+                            .background(
+                                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+                                shape = CircleShape
+                            )
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.cd_back_button),
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent,
+                    scrolledContainerColor = Color.Transparent
+                ),
+                scrollBehavior = scrollBehavior,
+                modifier = Modifier.align(Alignment.TopCenter)
+            )
         }
 
         // Fullscreen In-App Landscape Player Overlay
@@ -174,7 +218,6 @@ fun DetailScreen(
 @Composable
 private fun MovieDetailContent(
     detail: MovieDetail,
-    onBackClick: () -> Unit,
     onPlayInApp: (Video) -> Unit,
     onNavigateToOfficial: (Video) -> Unit,
     modifier: Modifier = Modifier
@@ -189,8 +232,7 @@ private fun MovieDetailContent(
         DetailHeader(
             title = detail.title,
             backdropUrl = detail.backdropUrl,
-            posterUrl = detail.posterUrl,
-            onBackClick = onBackClick
+            posterUrl = detail.posterUrl
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -254,7 +296,6 @@ private fun MovieDetailContent(
 @Composable
 private fun TvSeriesDetailContent(
     detail: TvSeriesDetail,
-    onBackClick: () -> Unit,
     onPlayInApp: (Video) -> Unit,
     onNavigateToOfficial: (Video) -> Unit,
     modifier: Modifier = Modifier
@@ -269,8 +310,7 @@ private fun TvSeriesDetailContent(
         DetailHeader(
             title = detail.name,
             backdropUrl = detail.backdropUrl,
-            posterUrl = detail.posterUrl,
-            onBackClick = onBackClick
+            posterUrl = detail.posterUrl
         )
 
         Spacer(modifier = Modifier.height(16.dp))

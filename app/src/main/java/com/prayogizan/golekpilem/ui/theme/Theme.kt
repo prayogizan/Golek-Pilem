@@ -11,15 +11,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
+    primary = Crimson80,
     onPrimary = DarkOnPrimary,
     primaryContainer = DarkPrimaryContainer,
     onPrimaryContainer = DarkOnPrimaryContainer,
-    secondary = PurpleGrey80,
+    secondary = CrimsonGrey80,
     onSecondary = DarkOnSecondary,
     secondaryContainer = DarkSecondaryContainer,
     onSecondaryContainer = DarkOnSecondaryContainer,
-    tertiary = Pink80,
+    tertiary = AmberGold80,
     onTertiary = DarkOnTertiary,
     tertiaryContainer = DarkTertiaryContainer,
     onTertiaryContainer = DarkOnTertiaryContainer,
@@ -38,15 +38,15 @@ private val DarkColorScheme = darkColorScheme(
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
+    primary = Crimson40,
     onPrimary = LightOnPrimary,
     primaryContainer = LightPrimaryContainer,
     onPrimaryContainer = LightOnPrimaryContainer,
-    secondary = PurpleGrey40,
+    secondary = CrimsonGrey40,
     onSecondary = LightOnSecondary,
     secondaryContainer = LightSecondaryContainer,
     onSecondaryContainer = LightOnSecondaryContainer,
-    tertiary = Pink40,
+    tertiary = AmberGold40,
     onTertiary = LightOnTertiary,
     tertiaryContainer = LightTertiaryContainer,
     onTertiaryContainer = LightOnTertiaryContainer,
@@ -68,7 +68,8 @@ private val LightColorScheme = lightColorScheme(
  * Main theme composable for Golek Pilem.
  *
  * Employs a custom high-contrast dark theme (#121212 background, #1E1E1E surface, #282828 surfaceVariant)
- * and accessible light theme conforming to WCAG AA contrast standards.
+ * anchored by the signature Cinema Crimson (#D61027) primary color with warm rose slate secondaries
+ * and luminous amber gold accents, fully conforming to WCAG AA/AAA contrast standards.
  *
  * @param darkTheme Whether to render dark mode styling. Defaults to system setting via [isSystemInDarkTheme].
  * @param dynamicColor Whether to use Android 12+ wallpaper dynamic coloring. Defaults to `false` to
