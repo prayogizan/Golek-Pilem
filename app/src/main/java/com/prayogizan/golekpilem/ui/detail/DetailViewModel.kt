@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
+import com.prayogizan.golekpilem.core.util.ErrorMessageResolver
 import com.prayogizan.golekpilem.core.util.Resource
 import com.prayogizan.golekpilem.domain.usecase.GetMovieDetailUseCase
 import com.prayogizan.golekpilem.domain.usecase.GetTvSeriesDetailUseCase
@@ -85,9 +86,15 @@ class DetailViewModel(
                         _uiState.value = when (resource) {
                             is Resource.Loading -> DetailUiState.Loading
                             is Resource.Success -> DetailUiState.MovieSuccess(resource.data)
-                            is Resource.Error -> DetailUiState.Error(
-                                resource.message.ifBlank { "Unable to load movie details" }
-                            )
+                            is Resource.Error -> {
+                                val errorType = ErrorMessageResolver.resolve(resource.cause)
+                                DetailUiState.Error(
+                                    message = resource.message.ifBlank { "Unable to load movie details" },
+                                    titleRes = errorType.titleRes,
+                                    messageRes = errorType.messageRes,
+                                    isNetworkError = errorType.isNetworkIssue
+                                )
+                            }
                         }
                     }
                 }
@@ -96,9 +103,15 @@ class DetailViewModel(
                         _uiState.value = when (resource) {
                             is Resource.Loading -> DetailUiState.Loading
                             is Resource.Success -> DetailUiState.TvSuccess(resource.data)
-                            is Resource.Error -> DetailUiState.Error(
-                                resource.message.ifBlank { "Unable to load TV series details" }
-                            )
+                            is Resource.Error -> {
+                                val errorType = ErrorMessageResolver.resolve(resource.cause)
+                                DetailUiState.Error(
+                                    message = resource.message.ifBlank { "Unable to load TV series details" },
+                                    titleRes = errorType.titleRes,
+                                    messageRes = errorType.messageRes,
+                                    isNetworkError = errorType.isNetworkIssue
+                                )
+                            }
                         }
                     }
                 }

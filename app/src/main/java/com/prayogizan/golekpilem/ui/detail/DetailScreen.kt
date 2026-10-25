@@ -48,6 +48,7 @@ import com.prayogizan.golekpilem.ui.common.GenreChips
 import com.prayogizan.golekpilem.ui.common.LoadingScreen
 import com.prayogizan.golekpilem.ui.detail.components.CompanyNetworkSection
 import com.prayogizan.golekpilem.ui.detail.components.DetailHeader
+import com.prayogizan.golekpilem.ui.detail.components.DetailShimmerScreen
 import com.prayogizan.golekpilem.ui.detail.components.DetailMetadata
 import com.prayogizan.golekpilem.ui.detail.components.FullScreenTrailerPlayer
 import com.prayogizan.golekpilem.ui.detail.components.InfoSection
@@ -103,31 +104,21 @@ fun DetailScreen(
     Box(modifier = modifier.fillMaxSize()) {
         when (uiState) {
             is DetailUiState.Loading -> {
-                Box(modifier = Modifier.fillMaxSize()) {
-                    LoadingScreen()
-                    IconButton(
-                        onClick = onBackClick,
-                        modifier = Modifier
-                            .padding(top = 16.dp, start = 16.dp)
-                            .size(48.dp)
-                            .align(Alignment.TopStart)
-                            .background(
-                                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
-                                shape = CircleShape
-                            )
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.cd_back_button),
-                            tint = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-                }
+                DetailShimmerScreen(
+                    onBackClick = onBackClick,
+                    modifier = Modifier.fillMaxSize()
+                )
             }
             is DetailUiState.Error -> {
                 Box(modifier = Modifier.fillMaxSize()) {
+                    val resolvedTitle = uiState.titleRes?.let { stringResource(it) }
+                        ?: stringResource(R.string.error_default_title)
+                    val resolvedMessage = uiState.messageRes?.let { stringResource(it) }
+                        ?: uiState.message.ifBlank { stringResource(R.string.error_default_message) }
                     ErrorScreen(
-                        message = uiState.message,
+                        title = resolvedTitle,
+                        message = resolvedMessage,
+                        isNetworkError = uiState.isNetworkError,
                         onRetry = { onEvent(DetailUiEvent.Retry) }
                     )
                     IconButton(

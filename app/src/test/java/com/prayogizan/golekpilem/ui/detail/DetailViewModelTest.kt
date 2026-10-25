@@ -158,6 +158,33 @@ class DetailViewModelTest {
     }
 
     @Test
+    fun `network error during retrieval sets isNetworkError true on uiState Error`() = runTest(testDispatcher) {
+        val savedStateHandle = SavedStateHandle(mapOf("id" to 533535, "mediaType" to "movie"))
+        every { getMovieDetailUseCase(533535) } returns flowOf(
+            Resource.Loading,
+            Resource.Error("No internet connection", cause = java.net.UnknownHostException())
+        )
+
+        val viewModel = DetailViewModel(
+            savedStateHandle = savedStateHandle,
+            getMovieDetailUseCase = getMovieDetailUseCase,
+            getTvSeriesDetailUseCase = getTvSeriesDetailUseCase
+        )
+
+        viewModel.uiState.test {
+            assertEquals(DetailUiState.Loading, awaitItem())
+
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            val errorState = awaitItem()
+            assertTrue(errorState is DetailUiState.Error)
+            val detailError = errorState as DetailUiState.Error
+            assertTrue(detailError.isNetworkError)
+            assertEquals(com.prayogizan.golekpilem.R.string.error_no_internet, detailError.messageRes)
+        }
+    }
+
+    @Test
     fun `retry event re-invokes usecase and recovers to MovieSuccess`() = runTest(testDispatcher) {
         val savedStateHandle = SavedStateHandle(mapOf("id" to 533535, "mediaType" to "movie"))
         every { getMovieDetailUseCase(533535) } returns flowOf(
