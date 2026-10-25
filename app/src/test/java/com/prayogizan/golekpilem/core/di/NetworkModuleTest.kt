@@ -1,6 +1,7 @@
 package com.prayogizan.golekpilem.core.di
 
 import com.prayogizan.golekpilem.core.constants.ApiConstants
+import com.prayogizan.golekpilem.core.network.RateLimitRetryInterceptor
 import kotlinx.serialization.json.Json
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -46,6 +47,15 @@ class NetworkModuleTest : KoinTest {
     }
 
     @Test
+    fun `verify networkModule provides singleton RateLimitRetryInterceptor`() {
+        val interceptor1: RateLimitRetryInterceptor = get()
+        val interceptor2: RateLimitRetryInterceptor = get()
+
+        assertNotNull(interceptor1)
+        assertSame("RateLimitRetryInterceptor should be a singleton", interceptor1, interceptor2)
+    }
+
+    @Test
     fun `verify networkModule provides singleton OkHttpClient with configured timeouts and interceptors`() {
         val client1: OkHttpClient = get()
         val client2: OkHttpClient = get()
@@ -57,9 +67,11 @@ class NetworkModuleTest : KoinTest {
         assertEquals(15000, client1.writeTimeoutMillis)
 
         val hasAuthInterceptor = client1.interceptors.any { it is AuthInterceptor }
+        val hasRateLimitInterceptor = client1.interceptors.any { it is RateLimitRetryInterceptor }
         val hasLoggingInterceptor = client1.interceptors.any { it is HttpLoggingInterceptor }
 
         assertTrue("OkHttpClient should contain AuthInterceptor", hasAuthInterceptor)
+        assertTrue("OkHttpClient should contain RateLimitRetryInterceptor", hasRateLimitInterceptor)
         assertTrue("OkHttpClient should contain HttpLoggingInterceptor", hasLoggingInterceptor)
     }
 

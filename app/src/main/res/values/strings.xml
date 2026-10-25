@@ -10,10 +10,19 @@
     <string name="cd_loading_indicator">Loading indicator</string>
     <string name="loading_default_message">Discovering movies &amp; series…</string>
 
-    <!-- Error Screen -->
+    <!-- Error Screen & Network Recovery -->
     <string name="cd_error_icon">Error indicator</string>
+    <string name="cd_offline_icon">Offline indicator</string>
     <string name="error_default_title">Something went wrong</string>
     <string name="error_default_message">Unable to load content. Please check your connection and try again.</string>
+    <string name="error_no_internet_title">No Connection</string>
+    <string name="error_no_internet">No internet connection. Please check your network and try again.</string>
+    <string name="error_auth_title">Configuration Error</string>
+    <string name="error_unauthorized">Authentication failed. Please verify API key.</string>
+    <string name="error_rate_limit_title">Too Many Requests</string>
+    <string name="error_rate_limited">Rate limit exceeded. Please try again later.</string>
+    <string name="error_server_title">Service Unavailable</string>
+    <string name="error_server_unavailable">TMDB service is temporarily unavailable. Please try again shortly.</string>
     <string name="error_retry_button">Try Again</string>
 
     <!-- Genre Chips -->

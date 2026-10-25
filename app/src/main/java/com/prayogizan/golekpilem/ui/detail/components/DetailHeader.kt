@@ -45,7 +45,7 @@ import com.prayogizan.golekpilem.ui.theme.GolekPilemTheme
  * @param title Title of the movie or television series for accessibility descriptions.
  * @param backdropUrl Remote image URL for the cinematic hero backdrop, or `null`.
  * @param posterUrl Remote image URL for the primary poster artwork, or `null`.
- * @param onBackClick Navigation callback triggered when the user taps the back button.
+ * @param onBackClick Optional navigation callback triggered when the user taps the back button. Defaults to `null` when back navigation is managed externally (e.g. via an enter-always top app bar).
  * @param modifier Optional modifier applied to the root container.
  */
 @Composable
@@ -53,8 +53,8 @@ fun DetailHeader(
     title: String,
     backdropUrl: String?,
     posterUrl: String?,
-    onBackClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onBackClick: (() -> Unit)? = null
 ) {
     Box(
         modifier = modifier
@@ -110,23 +110,25 @@ fun DetailHeader(
                     )
             )
 
-            // Overlaid High-Contrast Circular Back Button
-            IconButton(
-                onClick = onBackClick,
-                modifier = Modifier
-                    .padding(top = 16.dp, start = 16.dp)
-                    .size(48.dp)
-                    .align(Alignment.TopStart)
-                    .background(
-                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
-                        shape = CircleShape
+            // Overlaid High-Contrast Circular Back Button (rendered only if onBackClick is supplied)
+            if (onBackClick != null) {
+                IconButton(
+                    onClick = onBackClick,
+                    modifier = Modifier
+                        .padding(top = 16.dp, start = 16.dp)
+                        .size(48.dp)
+                        .align(Alignment.TopStart)
+                        .background(
+                            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+                            shape = CircleShape
+                        )
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = stringResource(R.string.cd_back_button),
+                        tint = MaterialTheme.colorScheme.onSurface
                     )
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = stringResource(R.string.cd_back_button),
-                    tint = MaterialTheme.colorScheme.onSurface
-                )
+                }
             }
         }
 

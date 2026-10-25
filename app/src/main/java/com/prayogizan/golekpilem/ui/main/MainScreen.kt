@@ -42,6 +42,8 @@ import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
 import com.prayogizan.golekpilem.R
 import kotlinx.coroutines.flow.flowOf
+import com.prayogizan.golekpilem.core.util.ErrorMessageResolver
+import com.prayogizan.golekpilem.core.util.ErrorType
 import com.prayogizan.golekpilem.domain.model.Movie
 import com.prayogizan.golekpilem.domain.model.TvSeries
 import com.prayogizan.golekpilem.ui.common.ErrorScreen
@@ -203,7 +205,7 @@ private fun MovieFeedGrid(
                 verticalItemSpacing = 16.dp,
                 modifier = modifier.fillMaxSize()
             ) {
-                items(count = 6) { index ->
+                items(count = 5) { index ->
                     val placeholderRatio = when (index % 3) {
                         0 -> 0.62f
                         1 -> 0.72f
@@ -214,10 +216,16 @@ private fun MovieFeedGrid(
             }
         }
         refreshState is LoadState.Error && movies.itemCount == 0 -> {
-            val errorMessage = refreshState.error.localizedMessage
-                ?: stringResource(R.string.error_default_message)
+            val errorType = ErrorMessageResolver.resolve(refreshState.error)
+            val errorMessage = if (errorType is ErrorType.Generic && !errorType.customMessage.isNullOrBlank()) {
+                errorType.customMessage
+            } else {
+                stringResource(errorType.messageRes)
+            }
             ErrorScreen(
+                title = stringResource(errorType.titleRes),
                 message = errorMessage,
+                isNetworkError = errorType.isNetworkIssue,
                 onRetry = { movies.retry() },
                 modifier = modifier.fillMaxSize()
             )
@@ -300,7 +308,7 @@ private fun TvSeriesFeedGrid(
                 verticalItemSpacing = 16.dp,
                 modifier = modifier.fillMaxSize()
             ) {
-                items(count = 6) { index ->
+                items(count = 5) { index ->
                     val placeholderRatio = when (index % 3) {
                         0 -> 0.62f
                         1 -> 0.72f
@@ -311,10 +319,16 @@ private fun TvSeriesFeedGrid(
             }
         }
         refreshState is LoadState.Error && tvSeries.itemCount == 0 -> {
-            val errorMessage = refreshState.error.localizedMessage
-                ?: stringResource(R.string.error_default_message)
+            val errorType = ErrorMessageResolver.resolve(refreshState.error)
+            val errorMessage = if (errorType is ErrorType.Generic && !errorType.customMessage.isNullOrBlank()) {
+                errorType.customMessage
+            } else {
+                stringResource(errorType.messageRes)
+            }
             ErrorScreen(
+                title = stringResource(errorType.titleRes),
                 message = errorMessage,
+                isNetworkError = errorType.isNetworkIssue,
                 onRetry = { tvSeries.retry() },
                 modifier = modifier.fillMaxSize()
             )

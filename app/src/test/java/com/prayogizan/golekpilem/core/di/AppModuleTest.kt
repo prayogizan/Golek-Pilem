@@ -19,6 +19,7 @@ import org.koin.core.context.stopKoin
 import org.koin.core.parameter.parametersOf
 import org.koin.test.KoinTest
 import org.koin.test.get
+import com.prayogizan.golekpilem.core.network.RateLimitRetryInterceptor
 import retrofit2.Retrofit
 
 class AppModuleTest : KoinTest {
@@ -37,6 +38,9 @@ class AppModuleTest : KoinTest {
 
     @Test
     fun `verify appModule resolves dependencies provided by included modules`() {
+        val rateLimitRetryInterceptor: RateLimitRetryInterceptor = get()
+        assertNotNull("RateLimitRetryInterceptor should be resolved via appModule included networkModule", rateLimitRetryInterceptor)
+
         val retrofit: Retrofit = get()
         assertNotNull("Retrofit should be resolved via appModule included networkModule", retrofit)
 

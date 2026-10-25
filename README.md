@@ -61,6 +61,12 @@ Powered by [The Movie Database (TMDB) API](https://www.themoviedb.org/).
 - Paginated user reviews from TMDB API with author avatars, ratings, and submission dates.
 - Expandable review body cards with "Read more" / "Show less" toggling for lengthy reviews.
 
+### 🎨 Dark Mode, Error Recovery & UX Polish
+- **Material 3 High-Contrast Dark Theme**: Custom dark color palette (`#121212` background, `#1E1E1E` surface, `#282828` surfaceVariant, `#EEEEEE` onSurface) engineered for cinematic immersion and conforming to **WCAG AA** standards.
+- **Robust Network Error Recovery**: Full-screen recovery view (`ErrorScreen`) handling offline connection drops, HTTP 401 configuration errors, and HTTP 500+ server outages with 1000ms debounced retry actions.
+- **HTTP 429 Exponential Backoff**: Transparent transport-layer rate limit interceptor (`RateLimitRetryInterceptor`) with exponential backoff and `Retry-After` header parsing.
+- **Accessibility (a11y)**: Strict $\ge 48\text{dp} \times 48\text{dp}$ touch target compliance across all interactive elements and complete content descriptions.
+
 ---
 
 ## 🏛 Architecture & Design Principles
@@ -117,23 +123,43 @@ Golek Pilem strictly enforces **Clean Architecture** and **Unidirectional Data F
 - **I — Interface Segregation**: Distinct, focused repository interfaces (`MovieRepository`, `TvSeriesRepository`) prevent bloated monolithic contracts.
 - **D — Dependency Inversion**: Presentation and Domain layers depend on abstractions; Koin wires implementations into consumers.
 
-### 3. Unidirectional Data Flow (UDF)
+### 3. State Management & Unidirectional Data Flow (UDF)
 
+Each feature screen strictly implements the **Unidirectional Data Flow (UDF)** pattern:
+
+```mermaid
+sequenceDiagram
+    participant User as User / UI Composable
+    participant VM as ViewModel (StateFlow)
+    participant Repo as Repository
+    participant Data as Network / Room Database
+
+    User->>VM: Dispatches UiAction / UiEvent (e.g. SelectTab, Retry)
+    VM->>VM: Updates state to Loading / Optimistic
+    VM->>Repo: Executes suspend use-case / data request
+    Repo->>Data: Query Network or Database
+    Data-->>Repo: Returns DTO or Entity Flow
+    Repo-->>VM: Emits Resource<DomainModel> / PagingData
+    VM->>VM: Computes new immutable UiState
+    VM-->>User: Emits UiState via StateFlow to Composable
 ```
-        ┌──────────────────┐
-        │    User Input    │
-        └────────┬─────────┘
-                 │ (Triggers UiEvent)
-                 ▼
-        ┌──────────────────┐
-        │    ViewModel     │ ◄─── (Executes UseCase)
-        └────────┬─────────┘
-                 │ (Emits StateFlow<UiState>)
-                 ▼
-        ┌──────────────────┐
-        │ Composable Screen│
-        └──────────────────┘
-```
+
+- **UiState**: Immutable sealed interface representing every possible UI state (e.g. `Loading`, `Success`, `Error`, `Empty`).
+- **UiAction / UiEvent**: Sealed interface representing all user intents and actions (e.g. `SelectTab`, `Retry`, `OnItemClick`).
+- **One-off Events**: Dispatched via `Channel<UiEffect>` and consumed with `LaunchedEffect`.
+
+#### UDF Architecture Mapping in Golek Pilem
+
+| UDF Architectural Component | Golek Pilem Component | Implementation Details |
+|---|---|---|
+| **UI Composable** | `MainScreen`, `DetailScreen` | Stateless composables driven purely by `UiState` and event callback `(UiEvent) -> Unit`. |
+| **Stateful Route Wrapper** | `MainRoute`, `DetailRoute` | Injects ViewModel via Koin (`koinViewModel()`), collects state lifecycle-safely (`collectAsStateWithLifecycle()`), and binds navigation. |
+| **UiAction / UiEvent** | `MainUiEvent`, `DetailUiEvent` | Sealed interfaces capturing all user intents (`SelectTab(index)`, `Retry`). |
+| **ViewModel (StateFlow)** | `MainViewModel`, `DetailViewModel` | Owns private `MutableStateFlow`, exposes public read-only `StateFlow<UiState>`, and processes events in `onEvent()`. |
+| **UiState** | `MainUiState`, `DetailUiState` | Strongly-typed immutable state models: tab index in `MainUiState` and LCE states (`Loading`, `MovieSuccess`, `TvSuccess`, `Error`) in `DetailUiState`. |
+| **Domain Interactor** | `GetMoviesUseCase`, `GetMovieDetailUseCase` | Pure Kotlin use cases orchestrating business logic and repository execution. |
+| **Repository & Data Source** | `MovieRepositoryImpl`, `TvSeriesRepositoryImpl` | Coordinates TMDB remote API calls via Retrofit, applies defensive mappers, and emits `Resource<T>` or `PagingData<T>`. |
+| **Network / Remote Storage** | `TmdbApiService`, OkHttp Client | Remote TMDB REST endpoints; Room database integration ready under Open/Closed Principle (OCP). |
 
 ---
 
