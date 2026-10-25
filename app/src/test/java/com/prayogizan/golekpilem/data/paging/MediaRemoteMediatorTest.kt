@@ -303,6 +303,36 @@ class MediaRemoteMediatorTest {
         assertEquals(ioException, error.throwable)
     }
 
+    @Test
+    fun `load APPEND with network failure returns MediatorResult Error`() = runBlocking {
+        val lastEntity = createMediaEntity(id = 5, mediaType = "MOVIE")
+        val remoteKey = RemoteKeyEntity(id = 5, mediaType = "MOVIE", prevKey = 1, nextKey = 2)
+        coEvery { remoteKeyDao.getRemoteKey(5, "MOVIE") } returns remoteKey
+
+        val ioException = IOException("Network timeout on page 2")
+        coEvery { apiService.getMovies(page = 2) } throws ioException
+
+        val mediator = MediaRemoteMediator(apiService, database, "MOVIE")
+        val state = PagingState(
+            pages = listOf(
+                androidx.paging.PagingSource.LoadResult.Page(
+                    data = listOf(lastEntity),
+                    prevKey = null,
+                    nextKey = 2
+                )
+            ),
+            anchorPosition = null,
+            config = pagingConfig,
+            leadingPlaceholderCount = 0
+        )
+
+        val result = mediator.load(LoadType.APPEND, state)
+
+        assertTrue(result is RemoteMediator.MediatorResult.Error)
+        val error = result as RemoteMediator.MediatorResult.Error
+        assertEquals(ioException, error.throwable)
+    }
+
     @Test(expected = CancellationException::class)
     fun `load rethrows CancellationException without catching`() {
         runBlocking {
