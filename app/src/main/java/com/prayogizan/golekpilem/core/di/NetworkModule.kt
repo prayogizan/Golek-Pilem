@@ -12,7 +12,10 @@ import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import java.util.concurrent.TimeUnit
 
+import com.prayogizan.golekpilem.core.connectivity.ConnectivityObserver
+import com.prayogizan.golekpilem.core.connectivity.NetworkConnectivityObserver
 import com.prayogizan.golekpilem.core.network.RateLimitRetryInterceptor
+import org.koin.android.ext.koin.androidContext
 
 /**
  * Core network dependency injection module providing TMDB HTTP networking infrastructure.
@@ -24,8 +27,13 @@ import com.prayogizan.golekpilem.core.network.RateLimitRetryInterceptor
  * - [RateLimitRetryInterceptor]: HTTP 429 exponential backoff retry handler.
  * - [OkHttpClient]: HTTP transport client with timeouts and interceptor chain.
  * - [Retrofit]: REST adapter targeted at the TMDB API v3 base URL.
+ * - [ConnectivityObserver]: Reactive system network capability observer.
  */
 val networkModule = module {
+
+    single<ConnectivityObserver> {
+        NetworkConnectivityObserver(context = androidContext())
+    }
 
     single(named("TmdbAccessToken")) {
         BuildConfig.TMDB_ACCESS_TOKEN
