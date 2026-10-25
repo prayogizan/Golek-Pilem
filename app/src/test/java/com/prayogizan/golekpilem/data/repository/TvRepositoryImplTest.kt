@@ -7,6 +7,11 @@ import com.prayogizan.golekpilem.data.remote.dto.MovieItemDto
 import com.prayogizan.golekpilem.data.remote.dto.PaginatedResponseDto
 import com.prayogizan.golekpilem.data.remote.dto.TvSeriesDetailDto
 import com.prayogizan.golekpilem.data.remote.dto.TvSeriesItemDto
+import com.prayogizan.golekpilem.data.local.dao.MediaDao
+import com.prayogizan.golekpilem.data.local.dao.RemoteKeyDao
+import com.prayogizan.golekpilem.data.local.db.GolekPilemDatabase
+import io.mockk.every
+import io.mockk.mockk
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.take
@@ -19,6 +24,13 @@ import org.junit.Test
 import java.io.IOException
 
 class TvRepositoryImplTest {
+
+    private val mockMediaDao: MediaDao = mockk(relaxed = true)
+    private val mockRemoteKeyDao: RemoteKeyDao = mockk(relaxed = true)
+    private val mockDatabase: GolekPilemDatabase = mockk(relaxed = true) {
+        every { mediaDao() } returns mockMediaDao
+        every { remoteKeyDao() } returns mockRemoteKeyDao
+    }
 
     private class FakeApiService(
         var getTvSeriesDetailHandler: (seriesId: Int) -> TvSeriesDetailDto = { id ->
@@ -61,6 +73,7 @@ class TvRepositoryImplTest {
         val fakeApi = FakeApiService()
         val repository = TvRepositoryImpl(
             apiService = fakeApi,
+            database = mockDatabase,
             ioDispatcher = Dispatchers.Unconfined
         )
 
@@ -73,6 +86,7 @@ class TvRepositoryImplTest {
         val fakeApi = FakeApiService()
         val repository = TvRepositoryImpl(
             apiService = fakeApi,
+            database = mockDatabase,
             ioDispatcher = Dispatchers.Unconfined
         )
 
@@ -97,6 +111,7 @@ class TvRepositoryImplTest {
         )
         val repository = TvRepositoryImpl(
             apiService = fakeApi,
+            database = mockDatabase,
             ioDispatcher = Dispatchers.Unconfined
         )
 
@@ -119,6 +134,7 @@ class TvRepositoryImplTest {
             )
             val repository = TvRepositoryImpl(
                 apiService = fakeApi,
+                database = mockDatabase,
                 ioDispatcher = Dispatchers.Unconfined
             )
 
@@ -126,3 +142,4 @@ class TvRepositoryImplTest {
         }
     }
 }
+

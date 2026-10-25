@@ -22,11 +22,17 @@ val dataModule = module {
     }
 
     single<MovieRepository> {
-        MovieRepositoryImpl(apiService = get())
+        MovieRepositoryImpl(
+            apiService = get(),
+            database = get()
+        )
     }
 
     single<TvRepository> {
-        TvRepositoryImpl(apiService = get())
+        TvRepositoryImpl(
+            apiService = get(),
+            database = get()
+        )
     }
 }
 
