@@ -23,7 +23,7 @@ class GetTvSeriesUseCaseTest {
             return pagingDataFlow
         }
 
-        override fun getTvSeriesDetail(seriesId: Int): Flow<Resource<TvSeriesDetail>> {
+        override fun getTvSeriesDetail(seriesId: Int, forceRefresh: Boolean): Flow<Resource<TvSeriesDetail>> {
             return emptyFlow()
         }
     }

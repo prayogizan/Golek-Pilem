@@ -28,7 +28,8 @@ interface MovieRepository {
      * or [Resource.Error] with sanitized error messages on failure.
      *
      * @param movieId The unique TMDB identifier of the target movie.
+     * @param forceRefresh Whether to bypass valid local cache and force remote TMDB retrieval.
      * @return A cold [Flow] emitting the retrieval lifecycle state encapsulated within [Resource].
      */
-    fun getMovieDetail(movieId: Int): Flow<Resource<MovieDetail>>
+    fun getMovieDetail(movieId: Int, forceRefresh: Boolean = false): Flow<Resource<MovieDetail>>
 }

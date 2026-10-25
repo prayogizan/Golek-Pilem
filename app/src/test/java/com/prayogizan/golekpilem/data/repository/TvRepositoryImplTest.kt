@@ -308,5 +308,105 @@ class TvRepositoryImplTest {
             repository.getTvSeriesDetail(seriesId = 123).toList()
         }
     }
+
+    @Test
+    fun `getTvSeriesDetail with forceRefresh true bypasses fresh cache and queries remote api`() = runBlocking {
+        val freshCachedEntity = MediaDetailEntity(
+            id = 1396,
+            mediaType = "TV",
+            title = "Breaking Bad (Cached)",
+            overview = "Cached synopsis",
+            posterPath = "/poster.jpg",
+            backdropPath = "/back.jpg",
+            releaseDate = "2008-01-20",
+            runtimeOrSeasons = "5 Seasons",
+            genresJson = "[]",
+            status = "Ended",
+            trailerKey = null,
+            trailerTitle = null,
+            reviewsJson = "[]",
+            voteAverage = 8.9,
+            voteCount = 14000,
+            cachedAt = System.currentTimeMillis()
+        )
+        coEvery { mockMediaDetailDao.getDetail(1396, "TV") } returns freshCachedEntity
+
+        var remoteCalled = false
+        val fakeApi = FakeApiService(
+            getTvSeriesDetailHandler = { id ->
+                remoteCalled = true
+                TvSeriesDetailDto(
+                    id = id,
+                    name = "Breaking Bad (Remote Refreshed)",
+                    tagline = "Tagline",
+                    overview = "Overview",
+                    posterPath = "/poster.jpg",
+                    backdropPath = "/backdrop.jpg",
+                    firstAirDate = "2008-01-20",
+                    lastAirDate = "2013-09-29",
+                    numberOfSeasons = 5,
+                    numberOfEpisodes = 62,
+                    voteAverage = 9.0,
+                    voteCount = 15000,
+                    status = "Ended"
+                )
+            }
+        )
+        val repository = TvRepositoryImpl(
+            apiService = fakeApi,
+            database = mockDatabase,
+            ioDispatcher = Dispatchers.Unconfined
+        )
+
+        val emissions = repository.getTvSeriesDetail(seriesId = 1396, forceRefresh = true).toList()
+
+        assertTrue("Remote API should have been hit despite fresh cache", remoteCalled)
+        assertEquals(3, emissions.size)
+        assertTrue(emissions[0] is Resource.Loading)
+        assertTrue(emissions[1] is Resource.Success) // Cached
+        assertTrue(emissions[2] is Resource.Success) // Remote refreshed
+        assertEquals("Breaking Bad (Remote Refreshed)", (emissions[2] as Resource.Success).data.name)
+    }
+
+    @Test
+    fun `getTvSeriesDetail with forceRefresh true emits Error on network failure even when cached entity exists`() = runBlocking {
+        val cachedEntity = MediaDetailEntity(
+            id = 1396,
+            mediaType = "TV",
+            title = "Breaking Bad (Cached)",
+            overview = "Cached synopsis",
+            posterPath = "/poster.jpg",
+            backdropPath = "/back.jpg",
+            releaseDate = "2008-01-20",
+            runtimeOrSeasons = "5 Seasons",
+            genresJson = "[]",
+            status = "Ended",
+            trailerKey = null,
+            trailerTitle = null,
+            reviewsJson = "[]",
+            voteAverage = 8.9,
+            voteCount = 14000,
+            cachedAt = System.currentTimeMillis()
+        )
+        coEvery { mockMediaDetailDao.getDetail(1396, "TV") } returns cachedEntity
+
+        val fakeApi = FakeApiService(
+            getTvSeriesDetailHandler = { throw IOException("Connection reset during refresh") }
+        )
+        val repository = TvRepositoryImpl(
+            apiService = fakeApi,
+            database = mockDatabase,
+            ioDispatcher = Dispatchers.Unconfined
+        )
+
+        val emissions = repository.getTvSeriesDetail(seriesId = 1396, forceRefresh = true).toList()
+
+        assertEquals(3, emissions.size)
+        assertTrue(emissions[0] is Resource.Loading)
+        assertTrue(emissions[1] is Resource.Success) // Cache emitted first
+        assertTrue("Third emission should be Resource.Error on forceRefresh failure", emissions[2] is Resource.Error)
+        val error = emissions[2] as Resource.Error
+        assertEquals("Connection reset during refresh", error.message)
+    }
 }
 

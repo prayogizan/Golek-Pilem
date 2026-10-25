@@ -14,12 +14,14 @@ import com.prayogizan.golekpilem.domain.model.MediaItem
  * @property watchlistItems Current list of saved titles in the user's watchlist.
  * @property watchlistCount Total count of titles saved in the watchlist driving the reactive tab badge.
  * @property isWatchlistLoading Indicates whether the initial watchlist query is in flight.
+ * @property isWatchlistRefreshing Indicates whether a pull-to-refresh reload is active on the watchlist tab.
  */
 data class MainUiState(
     val selectedTabIndex: Int = 0,
     val watchlistItems: List<MediaItem> = emptyList(),
     val watchlistCount: Int = 0,
-    val isWatchlistLoading: Boolean = false
+    val isWatchlistLoading: Boolean = false,
+    val isWatchlistRefreshing: Boolean = false
 )
 
 /**
@@ -40,4 +42,9 @@ sealed interface MainUiEvent {
      * @property tabIndex Target tab index to retry.
      */
     data class Retry(val tabIndex: Int) : MainUiEvent
+
+    /**
+     * Dispatched when the user triggers a pull-to-refresh swipe gesture on the Watchlist tab.
+     */
+    data object RefreshWatchlist : MainUiEvent
 }

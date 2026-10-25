@@ -371,4 +371,146 @@ class DetailViewModelTest {
             assertTrue((successState as DetailUiState.TvSuccess).isOfflineCache)
         }
     }
+
+    @Test
+    fun `refresh event triggers getMovieDetailUseCase with forceRefresh true and updates movie detail`() = runTest(testDispatcher) {
+        val savedStateHandle = SavedStateHandle(mapOf("id" to 533535, "mediaType" to "movie"))
+        val freshMovie = testMovieDetail.copy(voteAverage = 9.0)
+
+        every { getMovieDetailUseCase(533535, forceRefresh = false) } returns flowOf(
+            Resource.Loading,
+            Resource.Success(testMovieDetail)
+        )
+        every { getMovieDetailUseCase(533535, forceRefresh = true) } returns flowOf(
+            Resource.Loading,
+            Resource.Success(freshMovie)
+        )
+
+        val viewModel = createViewModel(savedStateHandle)
+
+        viewModel.uiState.test {
+            assertEquals(DetailUiState.Loading, awaitItem())
+            testDispatcher.scheduler.advanceUntilIdle()
+            val initialSuccess = awaitItem()
+            assertTrue(initialSuccess is DetailUiState.MovieSuccess)
+            assertEquals(7.7, (initialSuccess as DetailUiState.MovieSuccess).detail.voteAverage, 0.01)
+            assertFalse(initialSuccess.isRefreshing)
+
+            viewModel.onEvent(DetailUiEvent.Refresh)
+            val refreshingState = awaitItem()
+            assertTrue(refreshingState is DetailUiState.MovieSuccess)
+            assertTrue((refreshingState as DetailUiState.MovieSuccess).isRefreshing)
+
+            testDispatcher.scheduler.advanceUntilIdle()
+            val updatedSuccess = awaitItem()
+            assertTrue(updatedSuccess is DetailUiState.MovieSuccess)
+            assertEquals(9.0, (updatedSuccess as DetailUiState.MovieSuccess).detail.voteAverage, 0.01)
+            assertFalse(updatedSuccess.isRefreshing)
+        }
+
+        verify(exactly = 1) { getMovieDetailUseCase(533535, forceRefresh = true) }
+    }
+
+    @Test
+    fun `refresh event network failure preserves existing movie detail and sets userMessageRes with isRefreshing false`() = runTest(testDispatcher) {
+        val savedStateHandle = SavedStateHandle(mapOf("id" to 533535, "mediaType" to "movie"))
+
+        every { getMovieDetailUseCase(533535, forceRefresh = false) } returns flowOf(
+            Resource.Loading,
+            Resource.Success(testMovieDetail)
+        )
+        every { getMovieDetailUseCase(533535, forceRefresh = true) } returns flowOf(
+            Resource.Loading,
+            Resource.Error("Network offline", java.io.IOException("No internet"))
+        )
+
+        val viewModel = createViewModel(savedStateHandle)
+
+        viewModel.uiState.test {
+            assertEquals(DetailUiState.Loading, awaitItem())
+            testDispatcher.scheduler.advanceUntilIdle()
+            val initialSuccess = awaitItem()
+            assertTrue(initialSuccess is DetailUiState.MovieSuccess)
+            assertFalse((initialSuccess as DetailUiState.MovieSuccess).isRefreshing)
+
+            viewModel.onEvent(DetailUiEvent.Refresh)
+            val refreshingState = awaitItem()
+            assertTrue(refreshingState is DetailUiState.MovieSuccess)
+            assertTrue((refreshingState as DetailUiState.MovieSuccess).isRefreshing)
+
+            testDispatcher.scheduler.advanceUntilIdle()
+            val failedRefreshState = awaitItem()
+            assertTrue(failedRefreshState is DetailUiState.MovieSuccess)
+            val successResult = failedRefreshState as DetailUiState.MovieSuccess
+            assertEquals(testMovieDetail, successResult.detail)
+            assertFalse(successResult.isRefreshing)
+            assertEquals(R.string.error_no_internet, successResult.userMessageRes)
+        }
+    }
+
+    @Test
+    fun `refresh event triggers getTvSeriesDetailUseCase with forceRefresh true and updates tv detail`() = runTest(testDispatcher) {
+        val savedStateHandle = SavedStateHandle(mapOf("id" to 66732, "mediaType" to "tv"))
+        val freshTv = testTvDetail.copy(numberOfEpisodes = 40)
+
+        every { getTvSeriesDetailUseCase(66732, forceRefresh = false) } returns flowOf(
+            Resource.Loading,
+            Resource.Success(testTvDetail)
+        )
+        every { getTvSeriesDetailUseCase(66732, forceRefresh = true) } returns flowOf(
+            Resource.Loading,
+            Resource.Success(freshTv)
+        )
+
+        val viewModel = createViewModel(savedStateHandle)
+
+        viewModel.uiState.test {
+            assertEquals(DetailUiState.Loading, awaitItem())
+            testDispatcher.scheduler.advanceUntilIdle()
+            val initialSuccess = awaitItem()
+            assertTrue(initialSuccess is DetailUiState.TvSuccess)
+            assertFalse((initialSuccess as DetailUiState.TvSuccess).isRefreshing)
+
+            viewModel.onEvent(DetailUiEvent.Refresh)
+            val refreshingState = awaitItem()
+            assertTrue(refreshingState is DetailUiState.TvSuccess)
+            assertTrue((refreshingState as DetailUiState.TvSuccess).isRefreshing)
+
+            testDispatcher.scheduler.advanceUntilIdle()
+            val updatedSuccess = awaitItem()
+            assertTrue(updatedSuccess is DetailUiState.TvSuccess)
+            assertEquals(40, (updatedSuccess as DetailUiState.TvSuccess).detail.numberOfEpisodes)
+            assertFalse(updatedSuccess.isRefreshing)
+        }
+
+        verify(exactly = 1) { getTvSeriesDetailUseCase(66732, forceRefresh = true) }
+    }
+
+    @Test
+    fun `refresh event from Error state triggers loadDetail to retry`() = runTest(testDispatcher) {
+        val savedStateHandle = SavedStateHandle(mapOf("id" to 533535, "mediaType" to "movie"))
+        every { getMovieDetailUseCase(533535, forceRefresh = false) } returns flowOf(
+            Resource.Error("Timeout")
+        ) andThen flowOf(
+            Resource.Success(testMovieDetail)
+        )
+
+        val viewModel = createViewModel(savedStateHandle)
+
+        viewModel.uiState.test {
+            assertEquals(DetailUiState.Loading, awaitItem())
+            testDispatcher.scheduler.advanceUntilIdle()
+            val errorState = awaitItem()
+            assertTrue(errorState is DetailUiState.Error)
+
+            viewModel.onEvent(DetailUiEvent.Refresh)
+            assertEquals(DetailUiState.Loading, awaitItem())
+
+            testDispatcher.scheduler.advanceUntilIdle()
+            val successState = awaitItem()
+            assertTrue(successState is DetailUiState.MovieSuccess)
+        }
+
+        verify(exactly = 2) { getMovieDetailUseCase(533535, forceRefresh = false) }
+    }
 }

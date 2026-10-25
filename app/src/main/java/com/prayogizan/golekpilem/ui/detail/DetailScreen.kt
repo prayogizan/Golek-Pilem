@@ -42,6 +42,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -146,7 +149,26 @@ fun DetailScreen(
     // Scroll behavior that collapses back button on scroll down and reveals it immediately on scroll up
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
-    Box(
+    val isRefreshing = when (uiState) {
+        is DetailUiState.MovieSuccess -> uiState.isRefreshing
+        is DetailUiState.TvSuccess -> uiState.isRefreshing
+        else -> false
+    }
+    val pullToRefreshState = rememberPullToRefreshState()
+
+    PullToRefreshBox(
+        isRefreshing = isRefreshing,
+        onRefresh = { onEvent(DetailUiEvent.Refresh) },
+        state = pullToRefreshState,
+        indicator = {
+            PullToRefreshDefaults.Indicator(
+                state = pullToRefreshState,
+                isRefreshing = isRefreshing,
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .statusBarsPadding()
+            )
+        },
         modifier = modifier
             .fillMaxSize()
             .nestedScroll(scrollBehavior.nestedScrollConnection)
@@ -159,7 +181,11 @@ fun DetailScreen(
                 )
             }
             is DetailUiState.Error -> {
-                Box(modifier = Modifier.fillMaxSize()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                ) {
                     val resolvedTitle = uiState.titleRes?.let { stringResource(it) }
                         ?: stringResource(R.string.error_default_title)
                     val resolvedMessage = uiState.messageRes?.let { stringResource(it) }

@@ -12,6 +12,8 @@ import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Storage
 import androidx.compose.material3.Badge
@@ -27,6 +29,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -234,6 +237,8 @@ fun MainScreen(
                 2 -> {
                     WatchlistFeedGrid(
                         items = uiState.watchlistItems,
+                        isRefreshing = uiState.isWatchlistRefreshing,
+                        onRefresh = { onEvent(MainUiEvent.RefreshWatchlist) },
                         gridState = watchlistGridState,
                         onItemClick = onItemClick,
                         onExploreClick = { onEvent(MainUiEvent.SelectTab(0)) }
@@ -244,9 +249,7 @@ fun MainScreen(
     }
 }
 
-/**
- * 2-column staggered grid rendering paginated movie cards with skeleton shimmer and error handling.
- */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MovieFeedGrid(
     movies: LazyPagingItems<Movie>,
@@ -254,102 +257,116 @@ private fun MovieFeedGrid(
     onItemClick: (id: Int, mediaType: String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val refreshState = movies.loadState.refresh
+    val isRefreshing = movies.loadState.refresh is LoadState.Loading && movies.itemCount > 0
 
-    when {
-        refreshState is LoadState.Loading && movies.itemCount == 0 -> {
-            LazyVerticalStaggeredGrid(
-                columns = StaggeredGridCells.Fixed(2),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalItemSpacing = 16.dp,
-                modifier = modifier.fillMaxSize()
-            ) {
-                items(count = 5) { index ->
-                    val placeholderRatio = when (index % 3) {
-                        0 -> 0.62f
-                        1 -> 0.72f
-                        else -> 2f / 3f
-                    }
-                    MediaGridCardPlaceholder(aspectRatio = placeholderRatio)
-                }
-            }
-        }
-        refreshState is LoadState.Error && movies.itemCount == 0 -> {
-            val errorType = ErrorMessageResolver.resolve(refreshState.error)
-            val errorMessage = if (errorType is ErrorType.Generic && !errorType.customMessage.isNullOrBlank()) {
-                errorType.customMessage
-            } else {
-                stringResource(errorType.messageRes)
-            }
-            ErrorScreen(
-                title = stringResource(errorType.titleRes),
-                message = errorMessage,
-                isNetworkError = errorType.isNetworkIssue,
-                onRetry = { movies.retry() },
-                modifier = modifier.fillMaxSize()
-            )
-        }
-        movies.itemCount == 0 && refreshState is LoadState.NotLoading -> {
-            EmptyFeedView(
-                onRefresh = { movies.refresh() },
-                modifier = modifier.fillMaxSize()
-            )
-        }
-        else -> {
-            LazyVerticalStaggeredGrid(
-                columns = StaggeredGridCells.Fixed(2),
-                state = gridState,
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalItemSpacing = 16.dp,
-                modifier = modifier.fillMaxSize()
-            ) {
-                items(
-                    count = movies.itemCount,
-                    key = movies.itemKey { it.id }
-                ) { index ->
-                    val movie = movies[index]
-                    if (movie != null) {
-                        val itemAspectRatio = when (movie.id % 3) {
+    PullToRefreshBox(
+        isRefreshing = isRefreshing,
+        onRefresh = { movies.refresh() },
+        modifier = modifier.fillMaxSize()
+    ) {
+        val refreshState = movies.loadState.refresh
+
+        when {
+            refreshState is LoadState.Loading && movies.itemCount == 0 -> {
+                LazyVerticalStaggeredGrid(
+                    columns = StaggeredGridCells.Fixed(2),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalItemSpacing = 16.dp,
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    items(count = 5) { index ->
+                        val placeholderRatio = when (index % 3) {
                             0 -> 0.62f
                             1 -> 0.72f
                             else -> 2f / 3f
                         }
-                        MediaGridCard(
-                            id = movie.id,
-                            title = movie.title,
-                            posterUrl = movie.posterUrl,
-                            releaseYear = movie.releaseYear,
-                            voteAverage = movie.voteAverage,
-                            onClick = { onItemClick(movie.id, "movie") },
-                            aspectRatio = itemAspectRatio
-                        )
+                        MediaGridCardPlaceholder(aspectRatio = placeholderRatio)
                     }
                 }
+            }
+            refreshState is LoadState.Error && movies.itemCount == 0 -> {
+                val errorType = ErrorMessageResolver.resolve(refreshState.error)
+                val errorMessage = if (errorType is ErrorType.Generic && !errorType.customMessage.isNullOrBlank()) {
+                    errorType.customMessage
+                } else {
+                    stringResource(errorType.messageRes)
+                }
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    ErrorScreen(
+                        title = stringResource(errorType.titleRes),
+                        message = errorMessage,
+                        isNetworkError = errorType.isNetworkIssue,
+                        onRetry = { movies.retry() },
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+            }
+            movies.itemCount == 0 && refreshState is LoadState.NotLoading -> {
+                EmptyFeedView(
+                    onRefresh = { movies.refresh() },
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                )
+            }
+            else -> {
+                LazyVerticalStaggeredGrid(
+                    columns = StaggeredGridCells.Fixed(2),
+                    state = gridState,
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalItemSpacing = 16.dp,
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    items(
+                        count = movies.itemCount,
+                        key = movies.itemKey { it.id }
+                    ) { index ->
+                        val movie = movies[index]
+                        if (movie != null) {
+                            val itemAspectRatio = when (movie.id % 3) {
+                                0 -> 0.62f
+                                1 -> 0.72f
+                                else -> 2f / 3f
+                            }
+                            MediaGridCard(
+                                id = movie.id,
+                                title = movie.title,
+                                posterUrl = movie.posterUrl,
+                                releaseYear = movie.releaseYear,
+                                voteAverage = movie.voteAverage,
+                                onClick = { onItemClick(movie.id, "movie") },
+                                aspectRatio = itemAspectRatio
+                            )
+                        }
+                    }
 
-                // Append loading & error handlers spanning full width
-                when (val appendState = movies.loadState.append) {
-                    is LoadState.Loading -> {
-                        item(span = StaggeredGridItemSpan.FullLine) {
-                            PaginationLoadingItem()
+                    // Append loading & error handlers spanning full width
+                    when (val appendState = movies.loadState.append) {
+                        is LoadState.Loading -> {
+                            item(span = StaggeredGridItemSpan.FullLine) {
+                                PaginationLoadingItem()
+                            }
                         }
-                    }
-                    is LoadState.Error -> {
-                        item(span = StaggeredGridItemSpan.FullLine) {
-                            PaginationErrorItem(onRetry = { movies.retry() })
+                        is LoadState.Error -> {
+                            item(span = StaggeredGridItemSpan.FullLine) {
+                                PaginationErrorItem(onRetry = { movies.retry() })
+                            }
                         }
+                        is LoadState.NotLoading -> Unit
                     }
-                    is LoadState.NotLoading -> Unit
                 }
             }
         }
     }
 }
 
-/**
- * 2-column staggered grid rendering paginated TV series cards with skeleton shimmer and error handling.
- */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun TvSeriesFeedGrid(
     tvSeries: LazyPagingItems<TvSeries>,
@@ -357,143 +374,167 @@ private fun TvSeriesFeedGrid(
     onItemClick: (id: Int, mediaType: String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val refreshState = tvSeries.loadState.refresh
+    val isRefreshing = tvSeries.loadState.refresh is LoadState.Loading && tvSeries.itemCount > 0
 
-    when {
-        refreshState is LoadState.Loading && tvSeries.itemCount == 0 -> {
-            LazyVerticalStaggeredGrid(
-                columns = StaggeredGridCells.Fixed(2),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalItemSpacing = 16.dp,
-                modifier = modifier.fillMaxSize()
-            ) {
-                items(count = 5) { index ->
-                    val placeholderRatio = when (index % 3) {
-                        0 -> 0.62f
-                        1 -> 0.72f
-                        else -> 2f / 3f
-                    }
-                    MediaGridCardPlaceholder(aspectRatio = placeholderRatio)
-                }
-            }
-        }
-        refreshState is LoadState.Error && tvSeries.itemCount == 0 -> {
-            val errorType = ErrorMessageResolver.resolve(refreshState.error)
-            val errorMessage = if (errorType is ErrorType.Generic && !errorType.customMessage.isNullOrBlank()) {
-                errorType.customMessage
-            } else {
-                stringResource(errorType.messageRes)
-            }
-            ErrorScreen(
-                title = stringResource(errorType.titleRes),
-                message = errorMessage,
-                isNetworkError = errorType.isNetworkIssue,
-                onRetry = { tvSeries.retry() },
-                modifier = modifier.fillMaxSize()
-            )
-        }
-        tvSeries.itemCount == 0 && refreshState is LoadState.NotLoading -> {
-            EmptyFeedView(
-                onRefresh = { tvSeries.refresh() },
-                modifier = modifier.fillMaxSize()
-            )
-        }
-        else -> {
-            LazyVerticalStaggeredGrid(
-                columns = StaggeredGridCells.Fixed(2),
-                state = gridState,
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalItemSpacing = 16.dp,
-                modifier = modifier.fillMaxSize()
-            ) {
-                items(
-                    count = tvSeries.itemCount,
-                    key = tvSeries.itemKey { it.id }
-                ) { index ->
-                    val series = tvSeries[index]
-                    if (series != null) {
-                        val itemAspectRatio = when (series.id % 3) {
+    PullToRefreshBox(
+        isRefreshing = isRefreshing,
+        onRefresh = { tvSeries.refresh() },
+        modifier = modifier.fillMaxSize()
+    ) {
+        val refreshState = tvSeries.loadState.refresh
+
+        when {
+            refreshState is LoadState.Loading && tvSeries.itemCount == 0 -> {
+                LazyVerticalStaggeredGrid(
+                    columns = StaggeredGridCells.Fixed(2),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalItemSpacing = 16.dp,
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    items(count = 5) { index ->
+                        val placeholderRatio = when (index % 3) {
                             0 -> 0.62f
                             1 -> 0.72f
                             else -> 2f / 3f
                         }
-                        MediaGridCard(
-                            id = series.id,
-                            title = series.name,
-                            posterUrl = series.posterUrl,
-                            releaseYear = series.firstAirYear,
-                            voteAverage = series.voteAverage,
-                            onClick = { onItemClick(series.id, "tv") },
-                            aspectRatio = itemAspectRatio
-                        )
+                        MediaGridCardPlaceholder(aspectRatio = placeholderRatio)
                     }
                 }
+            }
+            refreshState is LoadState.Error && tvSeries.itemCount == 0 -> {
+                val errorType = ErrorMessageResolver.resolve(refreshState.error)
+                val errorMessage = if (errorType is ErrorType.Generic && !errorType.customMessage.isNullOrBlank()) {
+                    errorType.customMessage
+                } else {
+                    stringResource(errorType.messageRes)
+                }
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    ErrorScreen(
+                        title = stringResource(errorType.titleRes),
+                        message = errorMessage,
+                        isNetworkError = errorType.isNetworkIssue,
+                        onRetry = { tvSeries.retry() },
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+            }
+            tvSeries.itemCount == 0 && refreshState is LoadState.NotLoading -> {
+                EmptyFeedView(
+                    onRefresh = { tvSeries.refresh() },
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                )
+            }
+            else -> {
+                LazyVerticalStaggeredGrid(
+                    columns = StaggeredGridCells.Fixed(2),
+                    state = gridState,
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalItemSpacing = 16.dp,
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    items(
+                        count = tvSeries.itemCount,
+                        key = tvSeries.itemKey { it.id }
+                    ) { index ->
+                        val series = tvSeries[index]
+                        if (series != null) {
+                            val itemAspectRatio = when (series.id % 3) {
+                                0 -> 0.62f
+                                1 -> 0.72f
+                                else -> 2f / 3f
+                            }
+                            MediaGridCard(
+                                id = series.id,
+                                title = series.name,
+                                posterUrl = series.posterUrl,
+                                releaseYear = series.firstAirYear,
+                                voteAverage = series.voteAverage,
+                                onClick = { onItemClick(series.id, "tv") },
+                                aspectRatio = itemAspectRatio
+                            )
+                        }
+                    }
 
-                // Append loading & error handlers spanning full width
-                when (val appendState = tvSeries.loadState.append) {
-                    is LoadState.Loading -> {
-                        item(span = StaggeredGridItemSpan.FullLine) {
-                            PaginationLoadingItem()
+                    // Append loading & error handlers spanning full width
+                    when (val appendState = tvSeries.loadState.append) {
+                        is LoadState.Loading -> {
+                            item(span = StaggeredGridItemSpan.FullLine) {
+                                PaginationLoadingItem()
+                            }
                         }
-                    }
-                    is LoadState.Error -> {
-                        item(span = StaggeredGridItemSpan.FullLine) {
-                            PaginationErrorItem(onRetry = { tvSeries.retry() })
+                        is LoadState.Error -> {
+                            item(span = StaggeredGridItemSpan.FullLine) {
+                                PaginationErrorItem(onRetry = { tvSeries.retry() })
+                            }
                         }
+                        is LoadState.NotLoading -> Unit
                     }
-                    is LoadState.NotLoading -> Unit
                 }
             }
         }
     }
 }
 
-/**
- * 2-column staggered grid rendering saved watchlist media cards with empty state handling.
- */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun WatchlistFeedGrid(
     items: List<MediaItem>,
+    isRefreshing: Boolean,
+    onRefresh: () -> Unit,
     gridState: LazyStaggeredGridState,
     onItemClick: (id: Int, mediaType: String) -> Unit,
     onExploreClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    if (items.isEmpty()) {
-        EmptyWatchlistView(
-            onExploreClick = onExploreClick,
-            modifier = modifier.fillMaxSize()
-        )
-    } else {
-        LazyVerticalStaggeredGrid(
-            columns = StaggeredGridCells.Fixed(2),
-            state = gridState,
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalItemSpacing = 16.dp,
-            modifier = modifier.fillMaxSize()
-        ) {
-            items(
-                count = items.size,
-                key = { index -> "${items[index].id}_${items[index].mediaType}" }
-            ) { index ->
-                val item = items[index]
-                val itemAspectRatio = when (index % 3) {
-                    0 -> 0.62f
-                    1 -> 0.72f
-                    else -> 2f / 3f
+    PullToRefreshBox(
+        isRefreshing = isRefreshing,
+        onRefresh = onRefresh,
+        modifier = modifier.fillMaxSize()
+    ) {
+        if (items.isEmpty()) {
+            EmptyWatchlistView(
+                onExploreClick = onExploreClick,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+            )
+        } else {
+            LazyVerticalStaggeredGrid(
+                columns = StaggeredGridCells.Fixed(2),
+                state = gridState,
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalItemSpacing = 16.dp,
+                modifier = Modifier.fillMaxSize()
+            ) {
+                items(
+                    count = items.size,
+                    key = { index -> "${items[index].id}_${items[index].mediaType}" }
+                ) { index ->
+                    val item = items[index]
+                    val itemAspectRatio = when (index % 3) {
+                        0 -> 0.62f
+                        1 -> 0.72f
+                        else -> 2f / 3f
+                    }
+                    MediaGridCard(
+                        id = item.id,
+                        title = item.title,
+                        posterUrl = item.posterUrl,
+                        releaseYear = item.releaseYear,
+                        voteAverage = item.voteAverage,
+                        aspectRatio = itemAspectRatio,
+                        onClick = { onItemClick(item.id, item.mediaType.lowercase()) }
+                    )
                 }
-                MediaGridCard(
-                    id = item.id,
-                    title = item.title,
-                    posterUrl = item.posterUrl,
-                    releaseYear = item.releaseYear,
-                    voteAverage = item.voteAverage,
-                    aspectRatio = itemAspectRatio,
-                    onClick = { onItemClick(item.id, item.mediaType.lowercase()) }
-                )
             }
         }
     }
