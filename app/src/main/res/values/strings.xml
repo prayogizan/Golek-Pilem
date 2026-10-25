@@ -40,4 +40,40 @@
     <string name="cd_empty_illustration">Empty catalog illustration</string>
     <string name="pagination_error_message">Failed to load additional items</string>
     <string name="pagination_retry_button">Retry</string>
+
+    <!-- Detail Screen (Phase 3) -->
+    <string name="detail_overview_title">Overview</string>
+    <string name="detail_production_companies_title">Production Companies</string>
+    <string name="detail_networks_title">Broadcast Networks</string>
+    <string name="detail_status_label">Status</string>
+    <string name="detail_status_value">%1$s</string>
+    <string name="detail_vote_count">(%1$s votes)</string>
+    <string name="detail_runtime_hours_minutes">%1$dh %2$dm</string>
+    <string name="detail_runtime_minutes">%1$dm</string>
+    <string name="detail_seasons_episodes">%1$d Seasons • %2$d Episodes</string>
+    <string name="detail_season_episode_single">%1$d Season • %2$d Episode</string>
+    <string name="detail_no_overview">No overview available for this title.</string>
+    <string name="cd_detail_backdrop">Backdrop artwork for %1$s</string>
+    <string name="cd_detail_poster">Poster artwork for %1$s</string>
+    <string name="cd_company_logo">Logo for %1$s</string>
+    <string name="cd_network_logo">Logo for %1$s</string>
+
+    <!-- Reviews Section -->
+    <string name="detail_reviews_title">Reviews</string>
+    <string name="detail_reviews_count_format">Reviews (%1$d)</string>
+    <string name="detail_no_reviews">No reviews available yet for this title.</string>
+    <string name="detail_review_read_more">Read more</string>
+    <string name="detail_review_show_less">Show less</string>
+    <string name="cd_author_avatar">Avatar of %1$s</string>
+
+    <!-- Trailers & Videos -->
+    <string name="detail_watch_trailer">Watch Trailer</string>
+    <string name="detail_trailers_title">Trailers &amp; Videos</string>
+    <string name="detail_no_trailers">No trailers available for this title.</string>
+    <string name="detail_watch_on_youtube">Watch on YouTube</string>
+    <string name="cd_play_trailer">Play trailer %1$s</string>
+    <string name="cd_trailer_thumbnail">Thumbnail for %1$s</string>
+    <string name="cd_fullscreen_trailer">Play trailer in fullscreen</string>
+    <string name="cd_close_player">Close player</string>
+    <string name="trailer_official_badge">Official</string>
 </resources>

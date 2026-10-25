@@ -28,6 +28,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
 import com.prayogizan.golekpilem.R
+import com.prayogizan.golekpilem.ui.detail.DetailRoute
 import com.prayogizan.golekpilem.ui.main.MainRoute
 
 /**
@@ -39,7 +40,7 @@ import com.prayogizan.golekpilem.ui.main.MainRoute
  * @param navController The navigation controller orchestrating back stack and destination transitions.
  * @param modifier Optional modifier applied to the root [NavHost].
  * @param mainContent Optional custom composable slot for [Screen.Main] (defaults to [MainRoute]).
- * @param detailContent Optional custom composable slot for [Screen.Detail] (defaults to placeholder detail view).
+ * @param detailContent Optional custom composable slot for [Screen.Detail] (defaults to [DetailRoute]).
  */
 @Composable
 fun GolekPilemNavGraph(
@@ -74,8 +75,7 @@ fun GolekPilemNavGraph(
                     navController.popBackStack()
                 }
             } else {
-                DetailPlaceholderScreen(
-                    detail = detailRoute,
+                DetailRoute(
                     onBackClick = { navController.popBackStack() }
                 )
             }

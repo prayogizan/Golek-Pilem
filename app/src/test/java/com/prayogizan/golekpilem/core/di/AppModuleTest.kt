@@ -7,6 +7,8 @@ import com.prayogizan.golekpilem.domain.usecase.GetMovieDetailUseCase
 import com.prayogizan.golekpilem.domain.usecase.GetMoviesUseCase
 import com.prayogizan.golekpilem.domain.usecase.GetTvSeriesDetailUseCase
 import com.prayogizan.golekpilem.domain.usecase.GetTvSeriesUseCase
+import androidx.lifecycle.SavedStateHandle
+import com.prayogizan.golekpilem.ui.detail.DetailViewModel
 import com.prayogizan.golekpilem.ui.main.MainViewModel
 import org.junit.After
 import org.junit.Assert.assertNotNull
@@ -14,6 +16,7 @@ import org.junit.Before
 import org.junit.Test
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
+import org.koin.core.parameter.parametersOf
 import org.koin.test.KoinTest
 import org.koin.test.get
 import retrofit2.Retrofit
@@ -60,5 +63,8 @@ class AppModuleTest : KoinTest {
 
         val mainViewModel: MainViewModel = get()
         assertNotNull("MainViewModel should be resolved via presentationModule", mainViewModel)
+
+        val detailViewModel: DetailViewModel = get { parametersOf(SavedStateHandle()) }
+        assertNotNull("DetailViewModel should be resolved via presentationModule", detailViewModel)
     }
 }

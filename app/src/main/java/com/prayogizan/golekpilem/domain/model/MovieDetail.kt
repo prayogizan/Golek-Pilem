@@ -16,6 +16,8 @@ package com.prayogizan.golekpilem.domain.model
  * @property genres Collection of [Genre] entities categorized under this movie.
  * @property productionCompanies Collection of [ProductionCompany] entities involved in production.
  * @property status Current commercial release status (e.g. "Released", "Post Production").
+ * @property reviews Collection of [Review] entities submitted for this movie.
+ * @property videos Collection of [Video] entities representing trailers and promotional clips.
  */
 data class MovieDetail(
     val id: Int,
@@ -30,5 +32,16 @@ data class MovieDetail(
     val voteCount: Int,
     val genres: List<Genre>,
     val productionCompanies: List<ProductionCompany>,
-    val status: String
-)
+    val status: String,
+    val reviews: List<Review> = emptyList(),
+    val videos: List<Video> = emptyList()
+) {
+    /**
+     * Resolves the primary official trailer, falling back to any available trailer or YouTube video.
+     */
+    val primaryTrailer: Video?
+        get() = videos.firstOrNull { it.isYouTube && it.type.equals("Trailer", ignoreCase = true) && it.isOfficial }
+            ?: videos.firstOrNull { it.isYouTube && it.type.equals("Trailer", ignoreCase = true) }
+            ?: videos.firstOrNull { it.isYouTube }
+}
+

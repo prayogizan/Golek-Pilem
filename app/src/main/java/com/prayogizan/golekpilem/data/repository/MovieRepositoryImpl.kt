@@ -46,7 +46,10 @@ class MovieRepositoryImpl(
     override fun getMovieDetail(movieId: Int): Flow<Resource<MovieDetail>> = flow {
         emit(Resource.Loading)
         try {
-            val detailDto = apiService.getMovieDetail(movieId = movieId)
+            val detailDto = apiService.getMovieDetail(
+                movieId = movieId,
+                appendToResponse = "credits,reviews,videos"
+            )
             emit(Resource.Success(detailDto.toDomain()))
         } catch (e: CancellationException) {
             throw e

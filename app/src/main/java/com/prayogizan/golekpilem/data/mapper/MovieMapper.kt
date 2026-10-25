@@ -5,10 +5,15 @@ import com.prayogizan.golekpilem.data.remote.dto.GenreDto
 import com.prayogizan.golekpilem.data.remote.dto.MovieDetailDto
 import com.prayogizan.golekpilem.data.remote.dto.MovieItemDto
 import com.prayogizan.golekpilem.data.remote.dto.ProductionCompanyDto
+import com.prayogizan.golekpilem.data.remote.dto.ReviewDto
+import com.prayogizan.golekpilem.data.remote.dto.VideoDto
+import com.prayogizan.golekpilem.data.remote.dto.VideosResponseDto
 import com.prayogizan.golekpilem.domain.model.Genre
 import com.prayogizan.golekpilem.domain.model.Movie
 import com.prayogizan.golekpilem.domain.model.MovieDetail
 import com.prayogizan.golekpilem.domain.model.ProductionCompany
+import com.prayogizan.golekpilem.domain.model.Review
+import com.prayogizan.golekpilem.domain.model.Video
 import kotlin.math.roundToInt
 
 /**
@@ -53,7 +58,46 @@ fun MovieDetailDto.toDomain(): MovieDetail {
         voteCount = voteCount ?: 0,
         genres = genres.map { it.toDomain() },
         productionCompanies = productionCompanies.map { it.toDomain() },
-        status = status?.takeIf { it.isNotBlank() } ?: "Unknown"
+        status = status?.takeIf { it.isNotBlank() } ?: "Unknown",
+        reviews = reviews?.results?.map { it.toDomain() } ?: emptyList(),
+        videos = videos.toDomainList()
+    )
+}
+
+/**
+ * Maps raw [ReviewDto] to domain [Review] entity.
+ *
+ * Applies defensive null checks, normalizes author avatar URLs (handling both
+ * TMDB CDN paths and external Gravatar URLs), and extracts formatted submission dates.
+ *
+ * @receiver The raw DTO received from TMDB.
+ * @return A sanitized domain [Review] instance.
+ */
+fun ReviewDto.toDomain(): Review {
+    val authorName = authorDetails?.name?.takeIf { it.isNotBlank() }
+        ?: author?.takeIf { it.isNotBlank() }
+        ?: authorDetails?.username?.takeIf { it.isNotBlank() }
+        ?: "Anonymous"
+
+    val rawAvatar = authorDetails?.avatarPath
+    val normalizedAvatar = when {
+        rawAvatar.isNullOrBlank() -> null
+        rawAvatar.startsWith("/http://") || rawAvatar.startsWith("/https://") -> rawAvatar.substring(1)
+        rawAvatar.startsWith("http://") || rawAvatar.startsWith("https://") -> rawAvatar
+        else -> "${ApiConstants.IMAGE_BASE_URL}w185$rawAvatar"
+    }
+
+    val formattedDate = createdAt?.split("T")?.firstOrNull()?.takeIf { it.isNotBlank() }
+        ?: createdAt?.takeIf { it.isNotBlank() }
+        ?: "N/A"
+
+    return Review(
+        id = id,
+        author = authorName,
+        content = content.orEmpty(),
+        rating = authorDetails?.rating?.let { sanitizeVoteAverage(it) },
+        avatarUrl = normalizedAvatar,
+        createdAt = formattedDate
     )
 }
 
@@ -101,6 +145,41 @@ internal fun formatReleaseYear(dateString: String?): String {
 }
 
 /**
+ * Maps raw [VideoDto] to domain [Video] entity.
+ *
+ * Excludes entries with empty or blank platform keys or identifiers,
+ * ensuring unplayable video resources are omitted from the UI layer.
+ *
+ * @receiver The raw DTO received from TMDB.
+ * @return A sanitized domain [Video] instance or `null` if the entry is unplayable.
+ */
+fun VideoDto.toDomain(): Video? {
+    val videoKey = key?.trim().orEmpty()
+    val videoId = id?.trim().orEmpty()
+    if (videoKey.isBlank() || videoId.isBlank()) return null
+
+    return Video(
+        id = videoId,
+        name = name?.trim()?.ifBlank { "Trailer" } ?: "Trailer",
+        key = videoKey,
+        site = site?.trim()?.ifBlank { "YouTube" } ?: "YouTube",
+        type = type?.trim()?.ifBlank { "Trailer" } ?: "Trailer",
+        isOfficial = official ?: false,
+        publishedAt = publishedAt?.take(10).orEmpty()
+    )
+}
+
+/**
+ * Maps [VideosResponseDto] to a list of non-null domain [Video] entities.
+ *
+ * @receiver The nullable DTO container received from TMDB.
+ * @return A non-null list of mapped [Video] entities.
+ */
+fun VideosResponseDto?.toDomainList(): List<Video> {
+    return this?.results?.mapNotNull { it.toDomain() } ?: emptyList()
+}
+
+/**
  * Sanitizes and rounds a floating-point rating score to one decimal place.
  *
  * @param voteAverage The raw rating value received from TMDB.
@@ -110,3 +189,4 @@ internal fun sanitizeVoteAverage(voteAverage: Double?): Double {
     if (voteAverage == null || voteAverage < 0.0) return 0.0
     return (voteAverage * 10.0).roundToInt() / 10.0
 }
+
