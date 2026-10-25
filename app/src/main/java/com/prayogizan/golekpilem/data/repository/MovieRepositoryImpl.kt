@@ -8,7 +8,9 @@ import androidx.paging.map
 import com.prayogizan.golekpilem.core.util.Resource
 import com.prayogizan.golekpilem.data.local.db.GolekPilemDatabase
 import com.prayogizan.golekpilem.data.mapper.toDomain
+import com.prayogizan.golekpilem.data.mapper.toEntity
 import com.prayogizan.golekpilem.data.mapper.toMovie
+import com.prayogizan.golekpilem.data.mapper.toMovieDetail
 import com.prayogizan.golekpilem.data.paging.MediaRemoteMediator
 import com.prayogizan.golekpilem.data.remote.api.TmdbApiService
 import com.prayogizan.golekpilem.domain.model.Movie
@@ -25,6 +27,8 @@ import kotlinx.coroutines.flow.map
 /**
  * Concrete implementation of [MovieRepository] coordinating remote TMDB network interactions,
  * Paging 3 source creation, and detail stream emission with lifecycle-aware error encapsulation.
+ *
+ * Employs a Stale-While-Revalidate caching engine backed by Room's [com.prayogizan.golekpilem.data.local.dao.MediaDetailDao].
  *
  * @property apiService The Retrofit API service abstraction for TMDB.
  * @property database The primary Room database providing local persistence and Single Source of Truth caching.
@@ -62,16 +66,36 @@ class MovieRepositoryImpl(
 
     override fun getMovieDetail(movieId: Int): Flow<Resource<MovieDetail>> = flow {
         emit(Resource.Loading)
+
+        // 1. Query local Room cache
+        val cachedEntity = database.mediaDetailDao().getDetail(movieId, "MOVIE")
+        if (cachedEntity != null) {
+            emit(Resource.Success(cachedEntity.toMovieDetail(isOfflineCache = true)))
+        }
+
+        // 2. Evaluate cache freshness
+        val isStale = cachedEntity == null || cachedEntity.isExpired()
+
+        // 3. If cache is fresh, terminate flow early to prevent redundant network hit
+        if (cachedEntity != null && !isStale) {
+            return@flow
+        }
+
+        // 4. Stale cache or cache miss: retrieve fresh details from TMDB network
         try {
             val detailDto = apiService.getMovieDetail(
                 movieId = movieId,
                 appendToResponse = "credits,reviews,videos"
             )
-            emit(Resource.Success(detailDto.toDomain()))
+            database.mediaDetailDao().insertDetail(detailDto.toEntity(mediaType = "MOVIE"))
+            emit(Resource.Success(detailDto.toDomain(isOfflineCache = false)))
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            emit(Resource.Error(e.localizedMessage ?: "An unexpected error occurred", cause = e))
+            // 5. Offline fallback: only emit error if no cached version was previously emitted
+            if (cachedEntity == null) {
+                emit(Resource.Error(e.localizedMessage ?: "An unexpected error occurred", cause = e))
+            }
         }
     }.flowOn(ioDispatcher)
 }

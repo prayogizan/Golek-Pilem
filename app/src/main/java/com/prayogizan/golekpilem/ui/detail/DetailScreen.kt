@@ -4,19 +4,30 @@ import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.content.res.Configuration
 import android.net.Uri
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -202,6 +213,48 @@ fun DetailScreen(
                 scrollBehavior = scrollBehavior,
                 modifier = Modifier.align(Alignment.TopCenter)
             )
+
+            val isOfflineCache = when (uiState) {
+                is DetailUiState.MovieSuccess -> uiState.isOfflineCache
+                is DetailUiState.TvSuccess -> uiState.isOfflineCache
+                else -> false
+            }
+
+            AnimatedVisibility(
+                visible = isOfflineCache,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically(),
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .statusBarsPadding()
+                    .padding(top = 64.dp)
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.94f),
+                    tonalElevation = 4.dp,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)),
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CloudOff,
+                            contentDescription = stringResource(R.string.cd_offline_cached_badge),
+                            modifier = Modifier.size(16.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            text = stringResource(R.string.detail_offline_cache_badge),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
         }
 
         // Fullscreen In-App Landscape Player Overlay
@@ -537,6 +590,20 @@ private fun DetailScreenErrorLightPreview() {
         Surface {
             DetailScreen(
                 uiState = DetailUiState.Error("Network connection lost. Please check connection."),
+                onEvent = {},
+                onBackClick = {}
+            )
+        }
+    }
+}
+
+@Preview(name = "DetailScreen Movie Offline Cached - Dark Theme", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun DetailScreenMovieOfflineDarkPreview() {
+    GolekPilemTheme(darkTheme = true) {
+        Surface {
+            DetailScreen(
+                uiState = DetailUiState.MovieSuccess(sampleMovieDetail.copy(isOfflineCache = true)),
                 onEvent = {},
                 onBackClick = {}
             )

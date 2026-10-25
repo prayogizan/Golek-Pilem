@@ -36,9 +36,10 @@ fun TvSeriesItemDto.toDomain(): TvSeries {
  * and backdrop (`w780`), safely extracts dates and numbers, and maps nested collections.
  *
  * @receiver The raw DTO received from the TMDB television series detail response.
+ * @param isOfflineCache Indicates whether this entity originates from local offline storage.
  * @return A sanitized, UI-ready domain [TvSeriesDetail] instance.
  */
-fun TvSeriesDetailDto.toDomain(): TvSeriesDetail {
+fun TvSeriesDetailDto.toDomain(isOfflineCache: Boolean = false): TvSeriesDetail {
     return TvSeriesDetail(
         id = id,
         name = name?.takeIf { it.isNotBlank() } ?: "Unknown",
@@ -56,7 +57,8 @@ fun TvSeriesDetailDto.toDomain(): TvSeriesDetail {
         networks = networks.map { it.toDomain() },
         status = status?.takeIf { it.isNotBlank() } ?: "Unknown",
         reviews = reviews?.results?.map { it.toDomain() } ?: emptyList(),
-        videos = videos.toDomainList()
+        videos = videos.toDomainList(),
+        isOfflineCache = isOfflineCache
     )
 }
 

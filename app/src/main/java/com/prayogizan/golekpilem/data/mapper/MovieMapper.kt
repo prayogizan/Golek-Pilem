@@ -42,9 +42,10 @@ fun MovieItemDto.toDomain(): Movie {
  * and backdrop (`w780`), safely extracts dates and numbers, and maps nested collections.
  *
  * @receiver The raw DTO received from the TMDB movie detail response.
+ * @param isOfflineCache Indicates whether this entity originates from local offline storage.
  * @return A sanitized, UI-ready domain [MovieDetail] instance.
  */
-fun MovieDetailDto.toDomain(): MovieDetail {
+fun MovieDetailDto.toDomain(isOfflineCache: Boolean = false): MovieDetail {
     return MovieDetail(
         id = id,
         title = title?.takeIf { it.isNotBlank() } ?: "Unknown",
@@ -60,7 +61,8 @@ fun MovieDetailDto.toDomain(): MovieDetail {
         productionCompanies = productionCompanies.map { it.toDomain() },
         status = status?.takeIf { it.isNotBlank() } ?: "Unknown",
         reviews = reviews?.results?.map { it.toDomain() } ?: emptyList(),
-        videos = videos.toDomainList()
+        videos = videos.toDomainList(),
+        isOfflineCache = isOfflineCache
     )
 }
 

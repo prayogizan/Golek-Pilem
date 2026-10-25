@@ -18,6 +18,7 @@ package com.prayogizan.golekpilem.domain.model
  * @property status Current commercial release status (e.g. "Released", "Post Production").
  * @property reviews Collection of [Review] entities submitted for this movie.
  * @property videos Collection of [Video] entities representing trailers and promotional clips.
+ * @property isOfflineCache Indicates whether this record is served from local Room storage rather than fresh network.
  */
 data class MovieDetail(
     val id: Int,
@@ -34,7 +35,8 @@ data class MovieDetail(
     val productionCompanies: List<ProductionCompany>,
     val status: String,
     val reviews: List<Review> = emptyList(),
-    val videos: List<Video> = emptyList()
+    val videos: List<Video> = emptyList(),
+    val isOfflineCache: Boolean = false
 ) {
     /**
      * Resolves the primary official trailer, falling back to any available trailer or YouTube video.

@@ -66,6 +66,8 @@
     <string name="cd_detail_poster">Poster artwork for %1$s</string>
     <string name="cd_company_logo">Logo for %1$s</string>
     <string name="cd_network_logo">Logo for %1$s</string>
+    <string name="detail_offline_cache_badge">Offline view — Showing cached details</string>
+    <string name="cd_offline_cached_badge">Offline cached details indicator</string>
 
     <!-- Reviews Section -->
     <string name="detail_reviews_title">Reviews</string>
