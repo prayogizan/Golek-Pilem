@@ -255,4 +255,52 @@ class DetailViewModelTest {
             assertTrue((state as DetailUiState.Error).message.contains("Unsupported media type"))
         }
     }
+
+    @Test
+    fun `cached movie detail propagates isOfflineCache true to uiState MovieSuccess`() = runTest(testDispatcher) {
+        val savedStateHandle = SavedStateHandle(mapOf("id" to 533535, "mediaType" to "movie"))
+        val cachedMovie = testMovieDetail.copy(isOfflineCache = true)
+        every { getMovieDetailUseCase(533535) } returns flowOf(
+            Resource.Loading,
+            Resource.Success(cachedMovie)
+        )
+
+        val viewModel = DetailViewModel(
+            savedStateHandle = savedStateHandle,
+            getMovieDetailUseCase = getMovieDetailUseCase,
+            getTvSeriesDetailUseCase = getTvSeriesDetailUseCase
+        )
+
+        viewModel.uiState.test {
+            assertEquals(DetailUiState.Loading, awaitItem())
+            testDispatcher.scheduler.advanceUntilIdle()
+            val successState = awaitItem()
+            assertTrue(successState is DetailUiState.MovieSuccess)
+            assertTrue((successState as DetailUiState.MovieSuccess).isOfflineCache)
+        }
+    }
+
+    @Test
+    fun `cached tv series detail propagates isOfflineCache true to uiState TvSuccess`() = runTest(testDispatcher) {
+        val savedStateHandle = SavedStateHandle(mapOf("id" to 66732, "mediaType" to "tv"))
+        val cachedTv = testTvDetail.copy(isOfflineCache = true)
+        every { getTvSeriesDetailUseCase(66732) } returns flowOf(
+            Resource.Loading,
+            Resource.Success(cachedTv)
+        )
+
+        val viewModel = DetailViewModel(
+            savedStateHandle = savedStateHandle,
+            getMovieDetailUseCase = getMovieDetailUseCase,
+            getTvSeriesDetailUseCase = getTvSeriesDetailUseCase
+        )
+
+        viewModel.uiState.test {
+            assertEquals(DetailUiState.Loading, awaitItem())
+            testDispatcher.scheduler.advanceUntilIdle()
+            val successState = awaitItem()
+            assertTrue(successState is DetailUiState.TvSuccess)
+            assertTrue((successState as DetailUiState.TvSuccess).isOfflineCache)
+        }
+    }
 }
