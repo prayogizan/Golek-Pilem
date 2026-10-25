@@ -8,26 +8,33 @@ import com.prayogizan.golekpilem.domain.model.Movie
 import com.prayogizan.golekpilem.domain.model.TvSeries
 import com.prayogizan.golekpilem.domain.usecase.GetMoviesUseCase
 import com.prayogizan.golekpilem.domain.usecase.GetTvSeriesUseCase
+import com.prayogizan.golekpilem.domain.usecase.GetWatchlistCountUseCase
+import com.prayogizan.golekpilem.domain.usecase.GetWatchlistUseCase
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 /**
- * ViewModel managing the business state and paginated media streams for the main feed screen.
+ * ViewModel managing the business state, paginated catalog streams, and watchlist favorites for the main screen.
  *
- * Implements Unidirectional Data Flow (UDF) and provides cached [PagingData] streams
- * for both Movies and TV Series, scoped to [viewModelScope].
+ * Implements Unidirectional Data Flow (UDF), provides cached [PagingData] streams
+ * for Movies and TV Series, and observes reactive Room watchlist streams.
  *
  * Dependency injection is governed strictly via Koin DSL in `PresentationModule`.
  *
  * @param getMoviesUseCase Interactor for streaming paginated popular movies.
  * @param getTvSeriesUseCase Interactor for streaming paginated popular TV series.
+ * @param getWatchlistUseCase Interactor for streaming saved watchlist items.
+ * @param getWatchlistCountUseCase Interactor for streaming total count of saved watchlist items.
  */
 class MainViewModel(
     private val getMoviesUseCase: GetMoviesUseCase,
-    private val getTvSeriesUseCase: GetTvSeriesUseCase
+    private val getTvSeriesUseCase: GetTvSeriesUseCase,
+    private val getWatchlistUseCase: GetWatchlistUseCase,
+    private val getWatchlistCountUseCase: GetWatchlistCountUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MainUiState())
@@ -46,6 +53,28 @@ class MainViewModel(
      * Cold stream emitting paginated popular television series items cached within [viewModelScope].
      */
     val tvSeries: Flow<PagingData<TvSeries>> = getTvSeriesUseCase().cachedIn(viewModelScope)
+
+    init {
+        observeWatchlist()
+        observeWatchlistCount()
+    }
+
+    private fun observeWatchlist() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isWatchlistLoading = true) }
+            getWatchlistUseCase().collect { items ->
+                _uiState.update { it.copy(watchlistItems = items, isWatchlistLoading = false) }
+            }
+        }
+    }
+
+    private fun observeWatchlistCount() {
+        viewModelScope.launch {
+            getWatchlistCountUseCase().collect { count ->
+                _uiState.update { it.copy(watchlistCount = count) }
+            }
+        }
+    }
 
     /**
      * Dispatches user intent events from the UI layer to mutate state or trigger side effects.

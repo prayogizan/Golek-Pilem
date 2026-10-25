@@ -2,6 +2,7 @@ package com.prayogizan.golekpilem.ui.detail
 
 import androidx.lifecycle.SavedStateHandle
 import app.cash.turbine.test
+import com.prayogizan.golekpilem.R
 import com.prayogizan.golekpilem.core.util.Resource
 import com.prayogizan.golekpilem.domain.model.Genre
 import com.prayogizan.golekpilem.domain.model.MovieDetail
@@ -10,6 +11,10 @@ import com.prayogizan.golekpilem.domain.model.ProductionCompany
 import com.prayogizan.golekpilem.domain.model.TvSeriesDetail
 import com.prayogizan.golekpilem.domain.usecase.GetMovieDetailUseCase
 import com.prayogizan.golekpilem.domain.usecase.GetTvSeriesDetailUseCase
+import com.prayogizan.golekpilem.domain.usecase.IsWatchlistedUseCase
+import com.prayogizan.golekpilem.domain.usecase.ToggleWatchlistUseCase
+import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -22,6 +27,8 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -32,6 +39,8 @@ class DetailViewModelTest {
     private val testDispatcher = StandardTestDispatcher()
     private val getMovieDetailUseCase: GetMovieDetailUseCase = mockk()
     private val getTvSeriesDetailUseCase: GetTvSeriesDetailUseCase = mockk()
+    private val isWatchlistedUseCase: IsWatchlistedUseCase = mockk()
+    private val toggleWatchlistUseCase: ToggleWatchlistUseCase = mockk()
 
     private val testMovieDetail = MovieDetail(
         id = 533535,
@@ -70,11 +79,23 @@ class DetailViewModelTest {
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
+        every { isWatchlistedUseCase(any(), any()) } returns flowOf(false)
+        coEvery { toggleWatchlistUseCase(any()) } returns true
     }
 
     @After
     fun tearDown() {
         Dispatchers.resetMain()
+    }
+
+    private fun createViewModel(savedStateHandle: SavedStateHandle): DetailViewModel {
+        return DetailViewModel(
+            savedStateHandle = savedStateHandle,
+            getMovieDetailUseCase = getMovieDetailUseCase,
+            getTvSeriesDetailUseCase = getTvSeriesDetailUseCase,
+            isWatchlistedUseCase = isWatchlistedUseCase,
+            toggleWatchlistUseCase = toggleWatchlistUseCase
+        )
     }
 
     @Test
@@ -85,14 +106,9 @@ class DetailViewModelTest {
             Resource.Success(testMovieDetail)
         )
 
-        val viewModel = DetailViewModel(
-            savedStateHandle = savedStateHandle,
-            getMovieDetailUseCase = getMovieDetailUseCase,
-            getTvSeriesDetailUseCase = getTvSeriesDetailUseCase
-        )
+        val viewModel = createViewModel(savedStateHandle)
 
         viewModel.uiState.test {
-            // Initial state is Loading
             assertEquals(DetailUiState.Loading, awaitItem())
 
             testDispatcher.scheduler.advanceUntilIdle()
@@ -113,11 +129,7 @@ class DetailViewModelTest {
             Resource.Success(testTvDetail)
         )
 
-        val viewModel = DetailViewModel(
-            savedStateHandle = savedStateHandle,
-            getMovieDetailUseCase = getMovieDetailUseCase,
-            getTvSeriesDetailUseCase = getTvSeriesDetailUseCase
-        )
+        val viewModel = createViewModel(savedStateHandle)
 
         viewModel.uiState.test {
             assertEquals(DetailUiState.Loading, awaitItem())
@@ -133,6 +145,92 @@ class DetailViewModelTest {
     }
 
     @Test
+    fun `isWatchlisted stream updates isWatchlisted in uiState`() = runTest(testDispatcher) {
+        val savedStateHandle = SavedStateHandle(mapOf("id" to 533535, "mediaType" to "movie"))
+        every { getMovieDetailUseCase(533535) } returns flowOf(
+            Resource.Loading,
+            Resource.Success(testMovieDetail)
+        )
+        every { isWatchlistedUseCase(533535, "movie") } returns flowOf(true)
+
+        val viewModel = createViewModel(savedStateHandle)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.uiState.test {
+            val state = awaitItem()
+            assertTrue(state is DetailUiState.MovieSuccess)
+            assertTrue((state as DetailUiState.MovieSuccess).isWatchlisted)
+        }
+    }
+
+    @Test
+    fun `ToggleWatchlist event invokes ToggleWatchlistUseCase and updates userMessageRes with added confirmation`() = runTest(testDispatcher) {
+        val savedStateHandle = SavedStateHandle(mapOf("id" to 533535, "mediaType" to "movie"))
+        every { getMovieDetailUseCase(533535) } returns flowOf(
+            Resource.Success(testMovieDetail)
+        )
+        coEvery { toggleWatchlistUseCase(any()) } returns true
+
+        val viewModel = createViewModel(savedStateHandle)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.onEvent(DetailUiEvent.ToggleWatchlist)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.uiState.test {
+            val state = awaitItem() as DetailUiState.MovieSuccess
+            assertEquals(R.string.msg_added_to_watchlist, state.userMessageRes)
+        }
+
+        coVerify(exactly = 1) { toggleWatchlistUseCase(any()) }
+    }
+
+    @Test
+    fun `ToggleWatchlist event invokes ToggleWatchlistUseCase and updates userMessageRes with removed confirmation`() = runTest(testDispatcher) {
+        val savedStateHandle = SavedStateHandle(mapOf("id" to 533535, "mediaType" to "movie"))
+        every { getMovieDetailUseCase(533535) } returns flowOf(
+            Resource.Success(testMovieDetail)
+        )
+        coEvery { toggleWatchlistUseCase(any()) } returns false
+
+        val viewModel = createViewModel(savedStateHandle)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.onEvent(DetailUiEvent.ToggleWatchlist)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.uiState.test {
+            val state = awaitItem() as DetailUiState.MovieSuccess
+            assertEquals(R.string.msg_removed_from_watchlist, state.userMessageRes)
+        }
+
+        coVerify(exactly = 1) { toggleWatchlistUseCase(any()) }
+    }
+
+    @Test
+    fun `ClearUserMessage event resets userMessageRes to null`() = runTest(testDispatcher) {
+        val savedStateHandle = SavedStateHandle(mapOf("id" to 533535, "mediaType" to "movie"))
+        every { getMovieDetailUseCase(533535) } returns flowOf(
+            Resource.Success(testMovieDetail)
+        )
+        coEvery { toggleWatchlistUseCase(any()) } returns true
+
+        val viewModel = createViewModel(savedStateHandle)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.onEvent(DetailUiEvent.ToggleWatchlist)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.onEvent(DetailUiEvent.ClearUserMessage)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.uiState.test {
+            val state = awaitItem() as DetailUiState.MovieSuccess
+            assertNull(state.userMessageRes)
+        }
+    }
+
+    @Test
     fun `error during retrieval updates uiState to Error`() = runTest(testDispatcher) {
         val savedStateHandle = SavedStateHandle(mapOf("id" to 533535, "mediaType" to "movie"))
         every { getMovieDetailUseCase(533535) } returns flowOf(
@@ -140,11 +238,7 @@ class DetailViewModelTest {
             Resource.Error("HTTP 404: Not Found")
         )
 
-        val viewModel = DetailViewModel(
-            savedStateHandle = savedStateHandle,
-            getMovieDetailUseCase = getMovieDetailUseCase,
-            getTvSeriesDetailUseCase = getTvSeriesDetailUseCase
-        )
+        val viewModel = createViewModel(savedStateHandle)
 
         viewModel.uiState.test {
             assertEquals(DetailUiState.Loading, awaitItem())
@@ -165,11 +259,7 @@ class DetailViewModelTest {
             Resource.Error("No internet connection", cause = java.net.UnknownHostException())
         )
 
-        val viewModel = DetailViewModel(
-            savedStateHandle = savedStateHandle,
-            getMovieDetailUseCase = getMovieDetailUseCase,
-            getTvSeriesDetailUseCase = getTvSeriesDetailUseCase
-        )
+        val viewModel = createViewModel(savedStateHandle)
 
         viewModel.uiState.test {
             assertEquals(DetailUiState.Loading, awaitItem())
@@ -180,7 +270,7 @@ class DetailViewModelTest {
             assertTrue(errorState is DetailUiState.Error)
             val detailError = errorState as DetailUiState.Error
             assertTrue(detailError.isNetworkError)
-            assertEquals(com.prayogizan.golekpilem.R.string.error_no_internet, detailError.messageRes)
+            assertEquals(R.string.error_no_internet, detailError.messageRes)
         }
     }
 
@@ -193,21 +283,15 @@ class DetailViewModelTest {
             Resource.Success(testMovieDetail)
         )
 
-        val viewModel = DetailViewModel(
-            savedStateHandle = savedStateHandle,
-            getMovieDetailUseCase = getMovieDetailUseCase,
-            getTvSeriesDetailUseCase = getTvSeriesDetailUseCase
-        )
+        val viewModel = createViewModel(savedStateHandle)
 
         viewModel.uiState.test {
-            // Initial state
             assertEquals(DetailUiState.Loading, awaitItem())
 
             testDispatcher.scheduler.advanceUntilIdle()
             val errorState = awaitItem()
             assertTrue(errorState is DetailUiState.Error)
 
-            // Act - dispatch retry event
             viewModel.onEvent(DetailUiEvent.Retry)
             val retryLoadingState = awaitItem()
             assertEquals(DetailUiState.Loading, retryLoadingState)
@@ -225,11 +309,7 @@ class DetailViewModelTest {
     fun `invalid media identifier emits immediate Error state`() = runTest(testDispatcher) {
         val savedStateHandle = SavedStateHandle(mapOf("id" to 0, "mediaType" to "movie"))
 
-        val viewModel = DetailViewModel(
-            savedStateHandle = savedStateHandle,
-            getMovieDetailUseCase = getMovieDetailUseCase,
-            getTvSeriesDetailUseCase = getTvSeriesDetailUseCase
-        )
+        val viewModel = createViewModel(savedStateHandle)
 
         viewModel.uiState.test {
             val state = awaitItem()
@@ -241,11 +321,7 @@ class DetailViewModelTest {
     fun `unsupported media type emits Error state`() = runTest(testDispatcher) {
         val savedStateHandle = SavedStateHandle(mapOf("id" to 1234, "mediaType" to "anime"))
 
-        val viewModel = DetailViewModel(
-            savedStateHandle = savedStateHandle,
-            getMovieDetailUseCase = getMovieDetailUseCase,
-            getTvSeriesDetailUseCase = getTvSeriesDetailUseCase
-        )
+        val viewModel = createViewModel(savedStateHandle)
 
         viewModel.uiState.test {
             assertEquals(DetailUiState.Loading, awaitItem())
@@ -265,11 +341,7 @@ class DetailViewModelTest {
             Resource.Success(cachedMovie)
         )
 
-        val viewModel = DetailViewModel(
-            savedStateHandle = savedStateHandle,
-            getMovieDetailUseCase = getMovieDetailUseCase,
-            getTvSeriesDetailUseCase = getTvSeriesDetailUseCase
-        )
+        val viewModel = createViewModel(savedStateHandle)
 
         viewModel.uiState.test {
             assertEquals(DetailUiState.Loading, awaitItem())
@@ -289,11 +361,7 @@ class DetailViewModelTest {
             Resource.Success(cachedTv)
         )
 
-        val viewModel = DetailViewModel(
-            savedStateHandle = savedStateHandle,
-            getMovieDetailUseCase = getMovieDetailUseCase,
-            getTvSeriesDetailUseCase = getTvSeriesDetailUseCase
-        )
+        val viewModel = createViewModel(savedStateHandle)
 
         viewModel.uiState.test {
             assertEquals(DetailUiState.Loading, awaitItem())

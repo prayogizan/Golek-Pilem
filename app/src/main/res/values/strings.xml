@@ -87,4 +87,17 @@
     <string name="cd_fullscreen_trailer">Play trailer in fullscreen</string>
     <string name="cd_close_player">Close player</string>
     <string name="trailer_official_badge">Official</string>
+
+    <!-- Watchlist & Offline Favorites (Phase 6.1) -->
+    <string name="tab_watchlist">Watchlist</string>
+    <string name="cd_watchlist_tab">Watchlist tab</string>
+    <string name="cd_watchlist_badge">%1$d items in watchlist</string>
+    <string name="watchlist_empty_title">No saved titles yet</string>
+    <string name="watchlist_empty_message">Tap the bookmark icon on any movie or TV series to save it offline!</string>
+    <string name="watchlist_empty_action">Explore Catalog</string>
+    <string name="msg_added_to_watchlist">Added to Watchlist</string>
+    <string name="msg_removed_from_watchlist">Removed from Watchlist</string>
+    <string name="cd_add_to_watchlist">Add to watchlist</string>
+    <string name="cd_remove_from_watchlist">Remove from watchlist</string>
+    <string name="cd_empty_watchlist_illustration">Empty watchlist illustration</string>
 </resources>
