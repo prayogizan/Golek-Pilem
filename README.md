@@ -2,7 +2,7 @@
   <img src="art/logo.png" alt="Golek Pilem Logo" width="320" />
 </p>
 
-<h1 align="center">🎬 Golek Pilem</h1>
+<h1 align="center">Golek Pilem</h1>
 
 <p align="center">
   <a href="https://github.com/prayogizan/Golek-Pilem/releases/tag/v1.0.0"><img src="https://img.shields.io/badge/Version-1.0.0-informational.svg?logo=android" alt="App Version" /></a>
