@@ -100,4 +100,10 @@
     <string name="cd_add_to_watchlist">Add to watchlist</string>
     <string name="cd_remove_from_watchlist">Remove from watchlist</string>
     <string name="cd_empty_watchlist_illustration">Empty watchlist illustration</string>
+
+    <!-- Network Connectivity Banner (Phase 6.2) -->
+    <string name="network_offline_banner">You are offline. Showing cached content.</string>
+    <string name="network_online_banner">Back online. Syncing catalog…</string>
+    <string name="cd_network_offline">Network offline indicator</string>
+    <string name="cd_network_online">Network online indicator</string>
 </resources>
