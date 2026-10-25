@@ -302,4 +302,102 @@ class MovieRepositoryImplTest {
             repository.getMovieDetail(movieId = 123).toList()
         }
     }
+
+    @Test
+    fun `getMovieDetail with forceRefresh true bypasses fresh cache and queries remote api`() = runBlocking {
+        val freshCachedEntity = MediaDetailEntity(
+            id = 27205,
+            mediaType = "MOVIE",
+            title = "Inception (Cached)",
+            overview = "Cached synopsis",
+            posterPath = "/poster.jpg",
+            backdropPath = "/back.jpg",
+            voteAverage = 8.3,
+            voteCount = 35000,
+            releaseDate = "2010-07-16",
+            runtimeOrSeasons = "148 min",
+            genresJson = "[]",
+            status = "Released",
+            trailerKey = null,
+            trailerTitle = null,
+            reviewsJson = "[]",
+            cachedAt = System.currentTimeMillis()
+        )
+        coEvery { mockMediaDetailDao.getDetail(27205, "MOVIE") } returns freshCachedEntity
+
+        var remoteCalled = false
+        val fakeApi = FakeApiService(
+            getMovieDetailHandler = { id ->
+                remoteCalled = true
+                MovieDetailDto(
+                    id = id,
+                    title = "Inception (Remote Refreshed)",
+                    tagline = "Tagline",
+                    overview = "Overview",
+                    posterPath = "/poster.jpg",
+                    backdropPath = "/backdrop.jpg",
+                    releaseDate = "2010-07-16",
+                    runtime = 148,
+                    voteAverage = 8.4,
+                    voteCount = 36000,
+                    status = "Released"
+                )
+            }
+        )
+        val repository = MovieRepositoryImpl(
+            apiService = fakeApi,
+            database = mockDatabase,
+            ioDispatcher = Dispatchers.Unconfined
+        )
+
+        val emissions = repository.getMovieDetail(movieId = 27205, forceRefresh = true).toList()
+
+        assertTrue("Remote API should have been hit despite fresh cache", remoteCalled)
+        assertEquals(3, emissions.size)
+        assertTrue(emissions[0] is Resource.Loading)
+        assertTrue(emissions[1] is Resource.Success) // Cached
+        assertTrue(emissions[2] is Resource.Success) // Remote refreshed
+        assertEquals("Inception (Remote Refreshed)", (emissions[2] as Resource.Success).data.title)
+    }
+
+    @Test
+    fun `getMovieDetail with forceRefresh true emits Error on network failure even when cached entity exists`() = runBlocking {
+        val cachedEntity = MediaDetailEntity(
+            id = 27205,
+            mediaType = "MOVIE",
+            title = "Inception (Cached)",
+            overview = "Cached synopsis",
+            posterPath = "/poster.jpg",
+            backdropPath = "/back.jpg",
+            voteAverage = 8.3,
+            voteCount = 35000,
+            releaseDate = "2010-07-16",
+            runtimeOrSeasons = "148 min",
+            genresJson = "[]",
+            status = "Released",
+            trailerKey = null,
+            trailerTitle = null,
+            reviewsJson = "[]",
+            cachedAt = System.currentTimeMillis()
+        )
+        coEvery { mockMediaDetailDao.getDetail(27205, "MOVIE") } returns cachedEntity
+
+        val fakeApi = FakeApiService(
+            getMovieDetailHandler = { throw IOException("Connection reset during refresh") }
+        )
+        val repository = MovieRepositoryImpl(
+            apiService = fakeApi,
+            database = mockDatabase,
+            ioDispatcher = Dispatchers.Unconfined
+        )
+
+        val emissions = repository.getMovieDetail(movieId = 27205, forceRefresh = true).toList()
+
+        assertEquals(3, emissions.size)
+        assertTrue(emissions[0] is Resource.Loading)
+        assertTrue(emissions[1] is Resource.Success) // Cache emitted first
+        assertTrue("Third emission should be Resource.Error on forceRefresh failure", emissions[2] is Resource.Error)
+        val error = emissions[2] as Resource.Error
+        assertEquals("Connection reset during refresh", error.message)
+    }
 }

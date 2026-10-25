@@ -1,12 +1,15 @@
 package com.prayogizan.golekpilem.domain.di
 
+import com.prayogizan.golekpilem.domain.usecase.ClearImageCacheUseCase
 import com.prayogizan.golekpilem.domain.usecase.GetMovieDetailUseCase
 import com.prayogizan.golekpilem.domain.usecase.GetMoviesUseCase
+import com.prayogizan.golekpilem.domain.usecase.GetStorageStatsUseCase
 import com.prayogizan.golekpilem.domain.usecase.GetTvSeriesDetailUseCase
 import com.prayogizan.golekpilem.domain.usecase.GetTvSeriesUseCase
 import com.prayogizan.golekpilem.domain.usecase.GetWatchlistCountUseCase
 import com.prayogizan.golekpilem.domain.usecase.GetWatchlistUseCase
 import com.prayogizan.golekpilem.domain.usecase.IsWatchlistedUseCase
+import com.prayogizan.golekpilem.domain.usecase.PurgeExpiredCatalogUseCase
 import com.prayogizan.golekpilem.domain.usecase.ToggleWatchlistUseCase
 import org.koin.dsl.module
 
@@ -22,6 +25,9 @@ import org.koin.dsl.module
  * - [IsWatchlistedUseCase]: Interactor for observing media bookmark status.
  * - [ToggleWatchlistUseCase]: Interactor for atomic bookmark addition/removal.
  * - [GetWatchlistCountUseCase]: Interactor for streaming total watchlist count.
+ * - [GetStorageStatsUseCase]: Interactor for computing storage utilization metrics.
+ * - [ClearImageCacheUseCase]: Interactor for purging Coil image disk/memory cache.
+ * - [PurgeExpiredCatalogUseCase]: Interactor for pruning stale catalog records exempting watchlists.
  */
 val domainModule = module {
     factory { GetMoviesUseCase(movieRepository = get()) }
@@ -32,4 +38,8 @@ val domainModule = module {
     factory { IsWatchlistedUseCase(watchlistRepository = get()) }
     factory { ToggleWatchlistUseCase(watchlistRepository = get()) }
     factory { GetWatchlistCountUseCase(watchlistRepository = get()) }
+    factory { GetStorageStatsUseCase(storageRepository = get()) }
+    factory { ClearImageCacheUseCase(storageRepository = get()) }
+    factory { PurgeExpiredCatalogUseCase(storageRepository = get()) }
 }
+

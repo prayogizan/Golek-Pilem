@@ -64,7 +64,7 @@ class MovieRepositoryImpl(
         }
     }
 
-    override fun getMovieDetail(movieId: Int): Flow<Resource<MovieDetail>> = flow {
+    override fun getMovieDetail(movieId: Int, forceRefresh: Boolean): Flow<Resource<MovieDetail>> = flow {
         emit(Resource.Loading)
 
         // 1. Query local Room cache
@@ -76,12 +76,12 @@ class MovieRepositoryImpl(
         // 2. Evaluate cache freshness
         val isStale = cachedEntity == null || cachedEntity.isExpired()
 
-        // 3. If cache is fresh, terminate flow early to prevent redundant network hit
-        if (cachedEntity != null && !isStale) {
+        // 3. If cache is fresh and forceRefresh is false, terminate flow early to prevent redundant network hit
+        if (cachedEntity != null && !isStale && !forceRefresh) {
             return@flow
         }
 
-        // 4. Stale cache or cache miss: retrieve fresh details from TMDB network
+        // 4. Stale cache, cache miss, or forced refresh: retrieve fresh details from TMDB network
         try {
             val detailDto = apiService.getMovieDetail(
                 movieId = movieId,
@@ -92,8 +92,8 @@ class MovieRepositoryImpl(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            // 5. Offline fallback: only emit error if no cached version was previously emitted
-            if (cachedEntity == null) {
+            // 5. Offline fallback: emit error if no cached version was previously emitted or if force refresh requested
+            if (cachedEntity == null || forceRefresh) {
                 emit(Resource.Error(e.localizedMessage ?: "An unexpected error occurred", cause = e))
             }
         }

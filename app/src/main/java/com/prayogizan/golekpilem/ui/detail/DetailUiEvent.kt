@@ -11,6 +11,11 @@ sealed interface DetailUiEvent {
     data object Retry : DetailUiEvent
 
     /**
+     * User action requesting to pull-to-refresh the media detail and revalidate against the remote TMDB API.
+     */
+    data object Refresh : DetailUiEvent
+
+    /**
      * User action requesting to toggle the watchlist bookmark state of the currently viewed title.
      */
     data object ToggleWatchlist : DetailUiEvent

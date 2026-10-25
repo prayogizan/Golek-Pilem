@@ -1,6 +1,7 @@
 package com.prayogizan.golekpilem.ui.di
 
 import androidx.lifecycle.SavedStateHandle
+import com.prayogizan.golekpilem.ui.common.StorageViewModel
 import com.prayogizan.golekpilem.ui.detail.DetailViewModel
 import com.prayogizan.golekpilem.ui.main.MainViewModel
 import org.koin.core.module.dsl.viewModel
@@ -10,7 +11,7 @@ import org.koin.dsl.module
  * Presentation layer dependency injection module.
  *
  * Registers ViewModels and presentation-layer interactors. Feature ViewModels
- * ([MainViewModel] and [DetailViewModel]) are bound here.
+ * ([MainViewModel], [DetailViewModel], and [StorageViewModel]) are bound here.
  */
 val presentationModule = module {
     viewModel {
@@ -31,5 +32,14 @@ val presentationModule = module {
             toggleWatchlistUseCase = get()
         )
     }
+
+    viewModel {
+        StorageViewModel(
+            getStorageStatsUseCase = get(),
+            clearImageCacheUseCase = get(),
+            purgeExpiredCatalogUseCase = get()
+        )
+    }
 }
+
 

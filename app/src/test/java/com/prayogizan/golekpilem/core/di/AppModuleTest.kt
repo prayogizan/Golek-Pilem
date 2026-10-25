@@ -2,6 +2,7 @@ package com.prayogizan.golekpilem.core.di
 
 import android.content.Context
 import androidx.lifecycle.SavedStateHandle
+import coil3.ImageLoader
 import com.prayogizan.golekpilem.core.connectivity.ConnectivityObserver
 import com.prayogizan.golekpilem.core.network.RateLimitRetryInterceptor
 import com.prayogizan.golekpilem.data.local.dao.MediaDao
@@ -11,18 +12,24 @@ import com.prayogizan.golekpilem.data.local.dao.WatchlistDao
 import com.prayogizan.golekpilem.data.local.db.GolekPilemDatabase
 import com.prayogizan.golekpilem.data.remote.api.TmdbApiService
 import com.prayogizan.golekpilem.domain.repository.MovieRepository
+import com.prayogizan.golekpilem.domain.repository.StorageRepository
 import com.prayogizan.golekpilem.domain.repository.TvRepository
 import com.prayogizan.golekpilem.domain.repository.WatchlistRepository
+import com.prayogizan.golekpilem.domain.usecase.ClearImageCacheUseCase
 import com.prayogizan.golekpilem.domain.usecase.GetMovieDetailUseCase
 import com.prayogizan.golekpilem.domain.usecase.GetMoviesUseCase
+import com.prayogizan.golekpilem.domain.usecase.GetStorageStatsUseCase
 import com.prayogizan.golekpilem.domain.usecase.GetTvSeriesDetailUseCase
 import com.prayogizan.golekpilem.domain.usecase.GetTvSeriesUseCase
 import com.prayogizan.golekpilem.domain.usecase.GetWatchlistCountUseCase
 import com.prayogizan.golekpilem.domain.usecase.GetWatchlistUseCase
 import com.prayogizan.golekpilem.domain.usecase.IsWatchlistedUseCase
+import com.prayogizan.golekpilem.domain.usecase.PurgeExpiredCatalogUseCase
 import com.prayogizan.golekpilem.domain.usecase.ToggleWatchlistUseCase
+import com.prayogizan.golekpilem.ui.common.StorageViewModel
 import com.prayogizan.golekpilem.ui.detail.DetailViewModel
 import com.prayogizan.golekpilem.ui.main.MainViewModel
+import io.mockk.every
 import io.mockk.mockk
 import org.junit.After
 import org.junit.Assert.assertNotNull
@@ -36,6 +43,7 @@ import org.koin.dsl.module
 import org.koin.test.KoinTest
 import org.koin.test.get
 import retrofit2.Retrofit
+import java.io.File
 
 class AppModuleTest : KoinTest {
 
@@ -51,6 +59,11 @@ class AppModuleTest : KoinTest {
 
     @Before
     fun setUp() {
+        val tempDir = File(System.getProperty("java.io.tmpdir") ?: "")
+        every { mockContext.cacheDir } returns tempDir
+        every { mockContext.applicationContext } returns mockContext
+
+
         startKoin {
             androidContext(mockContext)
             modules(appModule, testDatabaseOverrides)
@@ -73,6 +86,9 @@ class AppModuleTest : KoinTest {
         val retrofit: Retrofit = get()
         assertNotNull("Retrofit should be resolved via appModule included networkModule", retrofit)
 
+        val imageLoader: ImageLoader = get()
+        assertNotNull("ImageLoader should be resolved via networkModule", imageLoader)
+
         val apiService: TmdbApiService = get()
         assertNotNull("TmdbApiService should be resolved via appModule included dataModule", apiService)
 
@@ -84,6 +100,9 @@ class AppModuleTest : KoinTest {
 
         val watchlistRepository: WatchlistRepository = get()
         assertNotNull("WatchlistRepository should be resolved via dataModule", watchlistRepository)
+
+        val storageRepository: StorageRepository = get()
+        assertNotNull("StorageRepository should be resolved via dataModule", storageRepository)
 
         val getMoviesUseCase: GetMoviesUseCase = get()
         assertNotNull("GetMoviesUseCase should be resolved via domainModule", getMoviesUseCase)
@@ -109,10 +128,23 @@ class AppModuleTest : KoinTest {
         val getWatchlistCountUseCase: GetWatchlistCountUseCase = get()
         assertNotNull("GetWatchlistCountUseCase should be resolved via domainModule", getWatchlistCountUseCase)
 
+        val getStorageStatsUseCase: GetStorageStatsUseCase = get()
+        assertNotNull("GetStorageStatsUseCase should be resolved via domainModule", getStorageStatsUseCase)
+
+        val clearImageCacheUseCase: ClearImageCacheUseCase = get()
+        assertNotNull("ClearImageCacheUseCase should be resolved via domainModule", clearImageCacheUseCase)
+
+        val purgeExpiredCatalogUseCase: PurgeExpiredCatalogUseCase = get()
+        assertNotNull("PurgeExpiredCatalogUseCase should be resolved via domainModule", purgeExpiredCatalogUseCase)
+
         val mainViewModel: MainViewModel = get()
         assertNotNull("MainViewModel should be resolved via presentationModule", mainViewModel)
 
         val detailViewModel: DetailViewModel = get { parametersOf(SavedStateHandle()) }
         assertNotNull("DetailViewModel should be resolved via presentationModule", detailViewModel)
+
+        val storageViewModel: StorageViewModel = get()
+        assertNotNull("StorageViewModel should be resolved via presentationModule", storageViewModel)
     }
 }
+

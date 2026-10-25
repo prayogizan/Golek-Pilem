@@ -15,6 +15,7 @@ class GetMovieDetailUseCaseTest {
 
     private class FakeMovieRepository : MovieRepository {
         var requestedMovieId: Int? = null
+        var requestedForceRefresh: Boolean? = null
         val expectedResourceFlow: Flow<Resource<MovieDetail>> = flowOf(
             Resource.Success(
                 MovieDetail(
@@ -37,14 +38,15 @@ class GetMovieDetailUseCaseTest {
 
         override fun getMovies(): Flow<PagingData<Movie>> = emptyFlow()
 
-        override fun getMovieDetail(movieId: Int): Flow<Resource<MovieDetail>> {
+        override fun getMovieDetail(movieId: Int, forceRefresh: Boolean): Flow<Resource<MovieDetail>> {
             requestedMovieId = movieId
+            requestedForceRefresh = forceRefresh
             return expectedResourceFlow
         }
     }
 
     @Test
-    fun `invoke delegates execution directly to movieRepository getMovieDetail with correct id`() {
+    fun `invoke delegates execution directly to movieRepository getMovieDetail with correct id and default forceRefresh`() {
         val fakeRepository = FakeMovieRepository()
         val useCase = GetMovieDetailUseCase(fakeRepository)
 
@@ -52,5 +54,18 @@ class GetMovieDetailUseCaseTest {
 
         assertEquals(fakeRepository.expectedResourceFlow, resultFlow)
         assertEquals(100, fakeRepository.requestedMovieId)
+        assertEquals(false, fakeRepository.requestedForceRefresh)
+    }
+
+    @Test
+    fun `invoke delegates execution directly to movieRepository getMovieDetail with explicit forceRefresh true`() {
+        val fakeRepository = FakeMovieRepository()
+        val useCase = GetMovieDetailUseCase(fakeRepository)
+
+        val resultFlow = useCase(movieId = 100, forceRefresh = true)
+
+        assertEquals(fakeRepository.expectedResourceFlow, resultFlow)
+        assertEquals(100, fakeRepository.requestedMovieId)
+        assertEquals(true, fakeRepository.requestedForceRefresh)
     }
 }

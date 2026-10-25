@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -88,6 +89,21 @@ class MainViewModel(
             }
             is MainUiEvent.Retry -> {
                 // Retry can be handled at the PagingData stream or trigger side-effects
+            }
+            is MainUiEvent.RefreshWatchlist -> {
+                refreshWatchlist()
+            }
+        }
+    }
+
+    private fun refreshWatchlist() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isWatchlistRefreshing = true) }
+            try {
+                val items = getWatchlistUseCase().first()
+                _uiState.update { it.copy(watchlistItems = items, isWatchlistRefreshing = false) }
+            } catch (_: Exception) {
+                _uiState.update { it.copy(isWatchlistRefreshing = false) }
             }
         }
     }

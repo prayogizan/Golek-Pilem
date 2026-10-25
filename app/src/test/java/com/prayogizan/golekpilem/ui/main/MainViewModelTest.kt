@@ -21,7 +21,9 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
@@ -158,5 +160,44 @@ class MainViewModelTest {
         verify(exactly = 1) { getTvSeriesUseCase() }
         verify(exactly = 1) { getWatchlistUseCase() }
         verify(exactly = 1) { getWatchlistCountUseCase() }
+    }
+
+    @Test
+    fun `refreshWatchlist triggers getWatchlistUseCase and updates isWatchlistRefreshing state`() = runTest(testDispatcher) {
+        val sampleItem = MediaItem(
+            id = 10,
+            mediaType = "MOVIE",
+            title = "Dune",
+            posterUrl = null,
+            backdropUrl = null,
+            releaseDate = "2021-10-22",
+            releaseYear = "2021",
+            voteAverage = 7.9,
+            overview = "Paul Atreides..."
+        )
+        every { getWatchlistUseCase() } returns flowOf(emptyList()) andThen flowOf(listOf(sampleItem))
+
+        val viewModel = MainViewModel(
+            getMoviesUseCase,
+            getTvSeriesUseCase,
+            getWatchlistUseCase,
+            getWatchlistCountUseCase
+        )
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.uiState.test {
+            val initial = awaitItem()
+            assertFalse(initial.isWatchlistRefreshing)
+
+            viewModel.onEvent(MainUiEvent.RefreshWatchlist)
+            val refreshingState = awaitItem()
+            assertTrue(refreshingState.isWatchlistRefreshing)
+
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            val refreshedState = awaitItem()
+            assertEquals(1, refreshedState.watchlistItems.size)
+            assertFalse(refreshedState.isWatchlistRefreshing)
+        }
     }
 }

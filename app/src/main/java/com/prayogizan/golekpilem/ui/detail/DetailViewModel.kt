@@ -72,6 +72,7 @@ class DetailViewModel(
     fun onEvent(event: DetailUiEvent) {
         when (event) {
             is DetailUiEvent.Retry -> loadDetail()
+            is DetailUiEvent.Refresh -> refresh()
             is DetailUiEvent.ToggleWatchlist -> toggleWatchlist()
             is DetailUiEvent.ClearUserMessage -> clearUserMessage()
         }
@@ -82,6 +83,85 @@ class DetailViewModel(
      */
     fun retry() {
         loadDetail()
+    }
+
+    private fun refresh() {
+        if (mediaId <= 0) return
+
+        when (val currentState = _uiState.value) {
+            is DetailUiState.MovieSuccess -> {
+                _uiState.update { currentState.copy(isRefreshing = true) }
+                viewModelScope.launch {
+                    getMovieDetailUseCase(mediaId, forceRefresh = true).collect { resource ->
+                        when (resource) {
+                            is Resource.Loading -> {
+                                // Retain existing content while refreshing in background
+                            }
+                            is Resource.Success -> {
+                                _uiState.update {
+                                    DetailUiState.MovieSuccess(
+                                        detail = resource.data,
+                                        isWatchlisted = isWatchlistedCache,
+                                        isRefreshing = false
+                                    )
+                                }
+                            }
+                            is Resource.Error -> {
+                                val errorType = ErrorMessageResolver.resolve(resource.cause)
+                                _uiState.update { state ->
+                                    if (state is DetailUiState.MovieSuccess) {
+                                        state.copy(
+                                            isRefreshing = false,
+                                            userMessageRes = errorType.messageRes
+                                        )
+                                    } else {
+                                        state
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            is DetailUiState.TvSuccess -> {
+                _uiState.update { currentState.copy(isRefreshing = true) }
+                viewModelScope.launch {
+                    getTvSeriesDetailUseCase(mediaId, forceRefresh = true).collect { resource ->
+                        when (resource) {
+                            is Resource.Loading -> {
+                                // Retain existing content while refreshing in background
+                            }
+                            is Resource.Success -> {
+                                _uiState.update {
+                                    DetailUiState.TvSuccess(
+                                        detail = resource.data,
+                                        isWatchlisted = isWatchlistedCache,
+                                        isRefreshing = false
+                                    )
+                                }
+                            }
+                            is Resource.Error -> {
+                                val errorType = ErrorMessageResolver.resolve(resource.cause)
+                                _uiState.update { state ->
+                                    if (state is DetailUiState.TvSuccess) {
+                                        state.copy(
+                                            isRefreshing = false,
+                                            userMessageRes = errorType.messageRes
+                                        )
+                                    } else {
+                                        state
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            is DetailUiState.Error -> {
+                loadDetail()
+            }
+            is DetailUiState.Loading -> Unit
+        }
     }
 
     private var isWatchlistedCache = false
