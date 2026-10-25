@@ -48,44 +48,26 @@
 
 ### 📱 Screenshots
 
-<div align="center">
+### Darkmode
 
-| Movies Feed | TV Series Feed | Watchlist Feed | Storage Diagnostics |
-| :---: | :---: | :---: | :---: |
-| <img src="art/screenshots/movie_feed.png" width="210" alt="Movies Feed" /> | <img src="art/screenshots/tv_feed.png" width="210" alt="TV Series Feed" /> | <img src="art/screenshots/watchlist.png" width="210" alt="Watchlist Feed" /> | <img src="art/screenshots/storage_dialog.png" width="210" alt="Storage Diagnostics" /> |
+<img width="270" height="585" alt="image" src="https://github.com/user-attachments/assets/008216e8-1d1e-4790-99b9-dcd5e5b97f3d" />   <img width="270" height="585" alt="image" src="https://github.com/user-attachments/assets/3eef915b-a0b4-439a-9b2a-b11eec11d7ca" /><br><img width="270" height="585" alt="image" src="https://github.com/user-attachments/assets/16363ccb-303f-4cf0-9804-f68288fda88d" />   <img width="270" height="585" alt="image" src="https://github.com/user-attachments/assets/cead23cf-0b8b-4c01-ad30-df1c6d5f4876" />
 
-| Movie Details | TV Series Details | Pull to Refresh | Fullscreen Trailer |
-| :---: | :---: | :---: | :---: |
-| <img src="art/screenshots/movie_detail.png" width="210" alt="Movie Details" /> | <img src="art/screenshots/tv_detail.png" width="210" alt="TV Series Details" /> | <img src="art/screenshots/pull_to_refresh.png" width="210" alt="Pull to Refresh" /> | <img src="art/screenshots/trailer_player.png" width="210" alt="Fullscreen Trailer" /> |
 
-</div>
 
-> [!TIP]
-> **Adding Screenshots:** Save your screen captures into [`art/screenshots/`](art/screenshots/) matching the filenames above (e.g. `movie_feed.png`, `movie_detail.png`), or update the image paths to your preferred naming.
+<br><br>
+
+### Lightmode
+
+<img width="270" height="585" alt="image" src="https://github.com/user-attachments/assets/6ae57a4e-6fe2-4857-bc3e-abd3d51e7b86" />   <img width="270" height="585" alt="image" src="https://github.com/user-attachments/assets/f47c7149-9016-4a68-b2f0-ebbd0c33b2d0" /><br><img width="270" height="585" alt="image" src="https://github.com/user-attachments/assets/10c62e61-dd12-43f1-9535-61020ed58bd2" />   <img width="270" height="585" alt="image" src="https://github.com/user-attachments/assets/b9c17c85-1ad7-4958-b835-2d5f9899dea2" />
+
+
 
 ---
 
 ### 🎥 Screen Recording & Demo
 
-<p align="center">
-  <!-- Option 1: Animated Demo (GIF / WebP) - Recommended for seamless GitHub autoplay -->
-  <img src="art/recordings/demo.gif" width="360" alt="App Walkthrough Demo" />
-</p>
+[click to see the video](https://drive.google.com/file/d/1XlL25yTHK2_Ahvj28wQw_CCyR2S4ofD2/view?usp=sharing)
 
-<!-- Option 2: MP4 Video / GitHub native video embed
-<p align="center">
-  <video src="art/recordings/demo.mp4" width="480" controls></video>
-</p>
--->
-
-<p align="center">
-  <em>Walkthrough showcasing offline caching, reactive watchlist badge counter, pull-to-refresh revalidation, and in-app YouTube trailer streaming.</em>
-</p>
-
-> [!TIP]
-> **Adding Screen Recording:**
-> - **Animated GIF / WebP (Recommended):** Place your recording at [`art/recordings/demo.gif`](art/recordings/) for automatic inline autoplay on GitHub.
-> - **MP4 Video:** In the GitHub web editor or Release description, drag and drop your `.mp4` file to generate a GitHub native video player URL (e.g. `https://github.com/user-attachments/assets/...`) and paste it here.
 
 ---
 
