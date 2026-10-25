@@ -2,31 +2,38 @@
   <img src="art/logo.png" alt="Golek Pilem Logo" width="320" />
 </p>
 
-# 🎬 Golek Pilem
+<h1 align="center">🎬 Golek Pilem</h1>
 
-[![App Version](https://img.shields.io/badge/Version-1.0.0-informational.svg?logo=android)](https://github.com/prayogizan/Golek-Pilem/releases/tag/v1.0.0)
-[![Kotlin Version](https://img.shields.io/badge/Kotlin-2.2.10-blue.svg?logo=kotlin)](https://kotlinlang.org)
-[![Android Gradle Plugin](https://img.shields.io/badge/AGP-9.4.1-green.svg?logo=android)](https://developer.android.com/studio/releases/gradle-plugin)
-[![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-BOM%202026.02.01-4285F4.svg?logo=jetpackcompose)](https://developer.android.com/jetpack/compose)
-[![Material 3](https://img.shields.io/badge/Material%203-PullToRefresh-795548.svg?logo=materialdesign)](https://m3.material.io)
-[![Koin DI](https://img.shields.io/badge/Koin-4.0.2-purple.svg?logo=koin)](https://insert-koin.io/)
-[![Room Database](https://img.shields.io/badge/Room-2.7.0-teal.svg?logo=sqlite)](https://developer.android.com/training/data-storage/room)
-[![Paging 3](https://img.shields.io/badge/Paging%203-RemoteMediator-orange.svg)](https://developer.android.com/topic/libraries/architecture/paging/v3-overview)
-[![Coil 3](https://img.shields.io/badge/Coil%203-250MB%20LRU%20DiskCache-blueviolet.svg)](https://coil-kt.github.io/coil/)
-[![Unit Tests](https://img.shields.io/badge/Unit%20Tests-185%20Passed-brightgreen.svg)](https://developer.android.com/training/testing)
-[![Min SDK](https://img.shields.io/badge/Min%20SDK-24-informational.svg)](https://developer.android.com)
-[![Target SDK](https://img.shields.io/badge/Target%20SDK-37-informational.svg)](https://developer.android.com)
-[![Clean Architecture](https://img.shields.io/badge/Architecture-Clean%20%2B%20UDF-brightgreen.svg)](https://developer.android.com/topic/architecture)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+<p align="center">
+  <a href="https://github.com/prayogizan/Golek-Pilem/releases/tag/v1.0.0"><img src="https://img.shields.io/badge/Version-1.0.0-informational.svg?logo=android" alt="App Version" /></a>
+  <a href="https://kotlinlang.org"><img src="https://img.shields.io/badge/Kotlin-2.2.10-blue.svg?logo=kotlin" alt="Kotlin Version" /></a>
+  <a href="https://developer.android.com/studio/releases/gradle-plugin"><img src="https://img.shields.io/badge/AGP-9.4.1-green.svg?logo=android" alt="Android Gradle Plugin" /></a>
+  <a href="https://developer.android.com/jetpack/compose"><img src="https://img.shields.io/badge/Jetpack%20Compose-BOM%202026.02.01-4285F4.svg?logo=jetpackcompose" alt="Jetpack Compose" /></a>
+  <a href="https://m3.material.io"><img src="https://img.shields.io/badge/Material%203-PullToRefresh-795548.svg?logo=materialdesign" alt="Material 3" /></a>
+  <a href="https://insert-koin.io/"><img src="https://img.shields.io/badge/Koin-4.0.2-purple.svg?logo=koin" alt="Koin DI" /></a>
+  <a href="https://developer.android.com/training/data-storage/room"><img src="https://img.shields.io/badge/Room-2.7.0-teal.svg?logo=sqlite" alt="Room Database" /></a>
+  <a href="https://developer.android.com/topic/libraries/architecture/paging/v3-overview"><img src="https://img.shields.io/badge/Paging%203-RemoteMediator-orange.svg" alt="Paging 3" /></a>
+  <a href="https://coil-kt.github.io/coil/"><img src="https://img.shields.io/badge/Coil%203-250MB%20LRU%20DiskCache-blueviolet.svg" alt="Coil 3" /></a>
+  <a href="https://developer.android.com/training/testing"><img src="https://img.shields.io/badge/Unit%20Tests-185%20Passed-brightgreen.svg" alt="Unit Tests" /></a>
+  <a href="https://developer.android.com"><img src="https://img.shields.io/badge/Min%20SDK-24-informational.svg" alt="Min SDK" /></a>
+  <a href="https://developer.android.com"><img src="https://img.shields.io/badge/Target%20SDK-37-informational.svg" alt="Target SDK" /></a>
+  <a href="https://developer.android.com/topic/architecture"><img src="https://img.shields.io/badge/Architecture-Clean%20%2B%20UDF-brightgreen.svg" alt="Clean Architecture" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT" /></a>
+</p>
 
-**Golek Pilem** (*Javanese for "Search Movies" / "Find Movies"*) is an enterprise-grade Android reference application designed to discover, track, and inspect popular movies and television series. Built natively with **Jetpack Compose**, **Material 3**, and **Clean Architecture**, it showcases cutting-edge Android engineering practices: offline-first Room persistence, Paging 3 RemoteMediator pagination, Coil 3 persistent disk caching, granular storage governance, non-destructive swipe-to-refresh revalidation, in-app YouTube video streaming, and an automated test suite of **185 unit tests**.
+<p align="center">
+  <strong>Golek Pilem</strong> (<em>Javanese for "Search Movies" / "Find Movies"</em>) is an enterprise-grade Android reference application designed to discover, track, and inspect popular movies and television series. Built natively with <strong>Jetpack Compose</strong>, <strong>Material 3</strong>, and <strong>Clean Architecture</strong>, it showcases cutting-edge Android engineering practices: offline-first Room persistence, Paging 3 RemoteMediator pagination, Coil 3 persistent disk caching, granular storage governance, non-destructive swipe-to-refresh revalidation, in-app YouTube video streaming, and an automated test suite of <strong>185 unit tests</strong>.
+</p>
 
-Powered by [The Movie Database (TMDB) API](https://www.themoviedb.org/).
+<p align="center">
+  Powered by <a href="https://www.themoviedb.org/">The Movie Database (TMDB) API</a>.
+</p>
 
 ---
 
 ## 📑 Table of Contents
 
+- [📸 Screenshots & Demo](#-screenshots--screen-recording)
 - [✨ Features](#-features)
 - [🏛 Architecture & Design Principles](#-architecture--design-principles)
 - [🛠 Tech Stack & Libraries](#-tech-stack--libraries)
@@ -34,6 +41,51 @@ Powered by [The Movie Database (TMDB) API](https://www.themoviedb.org/).
 - [🚀 Getting Started & Setup](#-getting-started--setup)
 - [🧪 Testing & Quality Assurance](#-testing--quality-assurance)
 - [📜 TMDB Attribution & License](#-tmdb-attribution--license)
+
+---
+
+## 📸 Screenshots & Screen Recording
+
+### 📱 Screenshots
+
+<div align="center">
+
+| Movies Feed | TV Series Feed | Watchlist Feed | Storage Diagnostics |
+| :---: | :---: | :---: | :---: |
+| <img src="art/screenshots/movie_feed.png" width="210" alt="Movies Feed" /> | <img src="art/screenshots/tv_feed.png" width="210" alt="TV Series Feed" /> | <img src="art/screenshots/watchlist.png" width="210" alt="Watchlist Feed" /> | <img src="art/screenshots/storage_dialog.png" width="210" alt="Storage Diagnostics" /> |
+
+| Movie Details | TV Series Details | Pull to Refresh | Fullscreen Trailer |
+| :---: | :---: | :---: | :---: |
+| <img src="art/screenshots/movie_detail.png" width="210" alt="Movie Details" /> | <img src="art/screenshots/tv_detail.png" width="210" alt="TV Series Details" /> | <img src="art/screenshots/pull_to_refresh.png" width="210" alt="Pull to Refresh" /> | <img src="art/screenshots/trailer_player.png" width="210" alt="Fullscreen Trailer" /> |
+
+</div>
+
+> [!TIP]
+> **Adding Screenshots:** Save your screen captures into [`art/screenshots/`](art/screenshots/) matching the filenames above (e.g. `movie_feed.png`, `movie_detail.png`), or update the image paths to your preferred naming.
+
+---
+
+### 🎥 Screen Recording & Demo
+
+<p align="center">
+  <!-- Option 1: Animated Demo (GIF / WebP) - Recommended for seamless GitHub autoplay -->
+  <img src="art/recordings/demo.gif" width="360" alt="App Walkthrough Demo" />
+</p>
+
+<!-- Option 2: MP4 Video / GitHub native video embed
+<p align="center">
+  <video src="art/recordings/demo.mp4" width="480" controls></video>
+</p>
+-->
+
+<p align="center">
+  <em>Walkthrough showcasing offline caching, reactive watchlist badge counter, pull-to-refresh revalidation, and in-app YouTube trailer streaming.</em>
+</p>
+
+> [!TIP]
+> **Adding Screen Recording:**
+> - **Animated GIF / WebP (Recommended):** Place your recording at [`art/recordings/demo.gif`](art/recordings/) for automatic inline autoplay on GitHub.
+> - **MP4 Video:** In the GitHub web editor or Release description, drag and drop your `.mp4` file to generate a GitHub native video player URL (e.g. `https://github.com/user-attachments/assets/...`) and paste it here.
 
 ---
 
